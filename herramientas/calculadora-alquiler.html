@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Realista | RENDER_FINAL</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Space Mono', monospace;
+            background-color: #fff;
+            color: #111;
+            margin: 0; padding: 15px;
+            text-align: center; 
+            box-sizing: border-box; overflow: hidden;
+        }
+        
+        h3 {
+            font-family: 'Archivo', sans-serif; text-transform: uppercase;
+            font-size: 1.1rem; margin-top: 0; margin-bottom: 20px;
+            border-bottom: 2px solid #000; padding-bottom: 10px;
+        }
+
+        .input-group { margin-bottom: 15px; text-align: left; }
+        
+        label {
+            font-size: 0.7rem; font-weight: 700; display: block;
+            margin-bottom: 5px; text-transform: uppercase; color: #555;
+        }
+
+        input {
+            width: 100%; padding: 10px; border: 1px solid #000;
+            background: #f9f9f9; font-family: 'Space Mono', monospace;
+            font-size: 1rem; box-sizing: border-box;
+        }
+        input:focus { outline: none; background: #eef; border-color: #0000FF; }
+
+        button {
+            width: 100%; padding: 15px; background-color: #0000FF; 
+            color: white; border: none; font-family: 'Space Mono', monospace;
+            font-weight: 700; font-size: 0.9rem; text-transform: uppercase;
+            cursor: pointer; transition: all 0.2s; margin-top: 5px;
+        }
+        button:hover { background-color: #000; }
+
+        #resultado { 
+            display: none; margin-top: 25px; border-top: 1px solid #ccc; 
+            padding-top: 20px; animation: fadeIn 0.5s ease forwards; 
+        }
+
+        /* --- DIAGNÓSTICO --- */
+        .veredicto-box {
+            border: 2px solid #000; padding: 15px; margin-bottom: 20px;
+            background: #f4f4f4; text-align: center;
+        }
+        .veredicto-titulo {
+            font-family: 'Archivo', sans-serif; font-size: 1.4rem; 
+            line-height: 1.1; margin-bottom: 8px; text-transform: uppercase;
+        }
+        .veredicto-texto { font-size: 0.85rem; line-height: 1.4; color: #333; }
+
+        /* --- DATOS NUMÉRICOS --- */
+        .big-data { margin: 15px 0; }
+        .big-percent { font-family: 'Archivo', sans-serif; font-size: 3rem; line-height: 1; }
+        .sub-data { font-size: 0.8rem; color: #666; margin-top: 5px; }
+
+        /* --- PLANO ARQUITECTÓNICO --- */
+        .blueprint-section {
+            margin-top: 25px; border-top: 1px dotted #ccc; padding-top: 15px;
+        }
+        
+        .blueprint-container {
+            display: flex; justify-content: center; align-items: center;
+            margin: 15px auto; 
+            width: 100%; max-width: 300px; height: 220px; 
+            background: #f4f4f4; border: 1px solid #999; 
+            position: relative;
+            background-image: 
+                linear-gradient(#e0e0e0 1px, transparent 1px), 
+                linear-gradient(90deg, #e0e0e0 1px, transparent 1px);
+            background-size: 10px 10px; 
+        }
+
+        .ref-box {
+            position: absolute;
+            width: 150px; height: 150px; 
+            border: 2px dashed #ccc;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 0;
+        }
+        .ref-label {
+            position: absolute; top: -15px; left: 0; width: 100%; 
+            font-size: 0.55rem; color: #999; text-align: center;
+        }
+
+        #visual-box { 
+            width: 0px; height: 0px; 
+            border: 4px solid #000; 
+            background-color: rgba(255, 255, 255, 0.9);
+            z-index: 10;
+            position: relative;
+            transition: all 1s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 5px 5px 10px rgba(0,0,0,0.1);
+        }
+
+        #door {
+            position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
+            width: 25px; height: 6px; background: #fff;
+            border-left: 3px solid #000; border-right: 3px solid #000;
+        }
+        
+        .room-label {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-family: 'Archivo', sans-serif; font-size: 0.9rem; font-weight: bold;
+            color: #000; white-space: nowrap;
+        }
+
+        /* ESTILO PARA EL RESALTADO DE TEXTO */
+        .highlight-label {
+            font-size: 0.75rem; 
+            font-weight: 800; /* Bien negrita */
+            text-transform: uppercase; 
+            color: #000; /* Negro fuerte */
+            background: #ddd; /* Fondo gris para resaltar */
+            padding: 4px 8px; /* Un poco de aire */
+            display: inline-block; /* Para que el fondo se pegue al texto */
+            margin-bottom: 10px;
+            border: 1px solid #999;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <h3>DIAGNÓSTICO ALQUILER</h3>
+
+    <div class="input-group">
+        <label>1. Tu Ingreso Mensual ($):</label>
+        <input type="number" id="sueldo1" placeholder="Ej: 750000">
+    </div>
+    
+    <div class="input-group">
+        <label>2. Ingreso Co-inquilino / Pareja ($):</label>
+        <input type="number" id="sueldo2" placeholder="0 (Opcional)">
+    </div>
+
+    <div class="input-group">
+        <label>3. Alquiler promedio + Expensas ($):</label>
+        <span style="font-size: 0.6rem; color: #666; display: block; margin-bottom: 5px;">(Solo vivienda, sin servicios)</span>
+        <input type="number" id="alquiler" placeholder="Ej: 550000">
+    </div>
+
+    <button id="mainBtn" onclick="calcular()">ANALIZAR_</button>
+
+    <div id="resultado">
+        
+        <div id="boxVeredicto" class="veredicto-box">
+            <div id="txtTitulo" class="veredicto-titulo">RESULTADO</div>
+            <div id="txtBajada" class="veredicto-texto">...</div>
+        </div>
+
+        <div class="big-data">
+            <div style="font-size:0.7rem; text-transform:uppercase; margin-bottom:5px;">Impacto en tus ingresos:</div>
+            <div id="txtPorcentaje" class="big-percent">0%</div>
+            <div id="txtSobrante" class="sub-data">Te sobran $0 para vivir</div>
+        </div>
+
+        <div class="blueprint-section">
+            <p class="highlight-label">
+                CAPACIDAD DE ALQUILER SANA (40%):
+            </p>
+            
+            <div class="blueprint-container">
+                <div class="ref-box"><div class="ref-label">MONOAMBIENTE ESTÁNDAR</div></div>
+                
+                <div id="visual-box">
+                    <div id="door"></div>
+                    <div class="room-label" id="txtMetrosPlano">0 m²</div>
+                </div>
+            </div>
+            
+            <p style="font-size:0.6rem; color:#666; margin-top:5px;">
+                *El recuadro sólido es lo que podés alquilar sanamente.<br>
+                *La línea punteada es un depto estándar de referencia.
+            </p>
+        </div>
+        
+        <button onclick="window.location.reload()" style="background:#333; margin-top:20px; font-size:0.7rem; padding: 10px;">RECALCULAR</button>
+    </div>
+
+    <script>
+    function calcular() {
+        const s1 = parseFloat(document.getElementById('sueldo1').value) || 0;
+        const s2 = parseFloat(document.getElementById('sueldo2').value) || 0;
+        const costoVivienda = parseFloat(document.getElementById('alquiler').value) || 0;
+
+        if ((s1 + s2) === 0 || costoVivienda === 0) {
+            alert("Por favor completá los ingresos y el alquiler.");
+            return;
+        }
+
+        const ingresoTotal = s1 + s2;
+        const porcentaje = (costoVivienda / ingresoTotal) * 100;
+        const serviciosEstimados = costoVivienda * 0.10; 
+        const gastoTotalSalida = costoVivienda + serviciosEstimados;
+        const sobrante = ingresoTotal - gastoTotalSalida;
+
+        const LINEA_POBREZA = 350000; 
+        const CONFORT_MEDIO = 600000; 
+
+        const resDiv = document.getElementById('resultado');
+        resDiv.style.display = 'block';
+        
+        document.getElementById('txtPorcentaje').innerText = porcentaje.toFixed(1) + "%";
+        document.getElementById('txtSobrante').innerHTML = "Resto para vivir: <strong>$" + Math.floor(sobrante).toLocaleString('es-AR') + "</strong>";
+
+        const box = document.getElementById('boxVeredicto');
+        const titulo = document.getElementById('txtTitulo');
+        const texto = document.getElementById('txtBajada');
+        const percentText = document.getElementById('txtPorcentaje');
+        let color = "#000";
+
+        if (gastoTotalSalida > ingresoTotal) {
+            color = "#000"; titulo.innerText = "IMPOSIBLE";
+            texto.innerText = "Los gastos superan tu ingreso total.";
+            box.style.background = "#ddd"; box.style.color = "#000";
+        } else if (sobrante < LINEA_POBREZA) {
+            color = "#ff0000"; titulo.innerText = "ALERTA DE SUPERVIVENCIA";
+            texto.innerText = "Aunque puedas pagarlo, te queda menos de una canasta básica para comer.";
+            box.style.background = "#ffebeb"; box.style.color = "#d80000"; box.style.borderColor = "#ff0000";
+        } else if (porcentaje > 40 && sobrante > CONFORT_MEDIO) {
+            color = "#0000FF"; titulo.innerText = "APROBADO (ESTILO DE VIDA)";
+            texto.innerText = "Destinás mucho a vivienda (" + porcentaje.toFixed(0) + "%), pero tus ingresos te permiten vivir bien.";
+            box.style.background = "#eef"; box.style.color = "#0000FF"; box.style.borderColor = "#0000FF";
+        } else if (porcentaje > 45) {
+            color = "#ff6600"; titulo.innerText = "PRESUPUESTO AJUSTADO";
+            texto.innerText = "El alquiler te come casi la mitad del sueldo.";
+            box.style.background = "#fff4e6"; box.style.color = "#d95c00"; box.style.borderColor = "#ff6600";
+        } else {
+            color = "#00cc99"; titulo.innerText = "SITUACIÓN SALUDABLE";
+            texto.innerText = "Tus números cierran perfecto.";
+            box.style.background = "#e6fffa"; box.style.color = "#008a6b"; box.style.borderColor = "#00cc99";
+        }
+        percentText.style.color = color;
+
+        const precioPorMetro = costoVivienda / 45; 
+        const presupuestoSano = ingresoTotal * 0.40; 
+        const metrosSanos = presupuestoSano / precioPorMetro;
+        
+        document.getElementById('txtMetrosPlano').innerText = metrosSanos.toFixed(1) + " m²";
+        
+        const visualBox = document.getElementById('visual-box');
+        const door = document.getElementById('door');
+        
+        let ladoVisual = Math.sqrt(metrosSanos) * 20; 
+        if (ladoVisual > 200) ladoVisual = 200; 
+        if (ladoVisual < 50) ladoVisual = 50;
+        
+        setTimeout(() => {
+            visualBox.style.width = (ladoVisual * 1.2) + "px"; 
+            visualBox.style.height = ladoVisual + "px";
+            visualBox.style.borderColor = color;
+            door.style.borderColor = color;
+        }, 100);
+
+        setTimeout(() => {
+            const currentHeight = document.documentElement.scrollHeight;
+            window.parent.postMessage({ height: currentHeight }, "*");
+        }, 300);
+    }
+    </script>
+</body>
+</html>

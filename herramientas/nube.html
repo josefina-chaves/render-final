@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RENDER_FINAL | Señal Oculta</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --rf-black: #111111;
+            --rf-white: #ffffff;
+            --font-display: 'Archivo', sans-serif;
+            --font-mono: 'Space Mono', monospace;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            background-color: var(--rf-white);
+            color: var(--rf-black);
+            overflow-x: hidden;
+        }
+
+        /* Candado de scroll */
+        body.locked { overflow-y: hidden; }
+
+        /* --- HERO CONTENEDOR --- */
+        #sky-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--rf-white);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* --- ARTÍCULO OCULTO --- */
+        #hidden-article {
+            position: absolute;
+            top: 15%; 
+            width: 90%;
+            max-width: 800px;
+            z-index: 1;
+            text-align: left;
+            box-sizing: border-box;
+        }
+
+        #hidden-article h1 {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900;
+            color: var(--rf-black);
+            text-transform: uppercase;
+            margin: 0 0 30px 0;
+            line-height: 1;
+            letter-spacing: -1px;
+        }
+
+        #hidden-article .subtitle {
+            font-family: var(--font-mono);
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            line-height: 1.5;
+            margin-bottom: 40px;
+        }
+
+        .thin-line { border: none; border-top: 1px solid #ccc; margin: 20px 0; }
+        .meta { font-family: var(--font-mono); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: #555; margin: 0; }
+        .thick-line { border: none; border-top: 4px solid var(--rf-black); margin: 20px 0 40px 0; }
+        
+        #hidden-article .body-text {
+            font-family: var(--font-mono); font-size: clamp(1rem, 2.5vw, 1.2rem); line-height: 1.8;
+        }
+
+        /* --- CONTENEDOR DE NUBES --- */
+        #clouds-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Para no bloquear la interfaz general */
+        }
+
+        .cloud-element {
+            position: absolute;
+            pointer-events: auto; /* La nube sí es interactiva */
+            cursor: grab;
+            touch-action: none;
+            will-change: transform, opacity;
+            transition: opacity 2.5s ease-out; /* Desvanecimiento súper lento al ganar */
+            filter: drop-shadow(0px 15px 25px rgba(0,0,0,0.15));
+        }
+
+        .cloud-element:active { cursor: grabbing; }
+
+        /* --- PISTA VISUAL --- */
+        .interaction-hint {
+            position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%);
+            z-index: 20; font-family: var(--font-mono); font-weight: 700; color: var(--rf-white);
+            background: var(--rf-black); padding: 10px 20px;
+            border: 2px solid var(--rf-white);
+            pointer-events: none; text-align: center;
+            animation: pulse 2.5s infinite; transition: opacity 0.5s ease;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .interaction-hint.hidden { opacity: 0; animation: none; }
+
+        /* --- CONTENIDO PARA SCROLL --- */
+        .extra-content {
+            max-width: 800px; margin: 0 auto; padding: 40px 20px 100px 20px;
+            font-family: var(--font-mono); font-size: 1.2rem; line-height: 1.8;
+        }
+    </style>
+</head>
+<body class="locked">
+
+    <div id="sky-container">
+        <div id="hidden-article">
+            <h1>LOREM IPSUM<br>DOLOR SIT</h1>
+            <p class="subtitle">Amet consectetur adipiscing elit sed do eiusmod tempor.</p>
+            
+            <hr class="thin-line">
+            <p class="meta">:: INVESTIGACIÓN | POR ALGUIEN ESCRIBIÓ | ABRIL 2026</p>
+            <hr class="thick-line">
+            
+            <p class="body-text">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+        </div>
+
+        <div id="clouds-layer"></div>
+
+        <div class="interaction-hint" id="hint">/// DESPEJAR PARA LEER ///</div>
+    </div>
+
+    <div class="extra-content">
+        <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        <p>Curabitur pretium tincidunt lacus. Nulla facilisi. Sed sit amet feugiat turpis. Mauris fermentum, sem at interdum porttitor, tortor sem facilisis dui, id bibendum ex elit orem ipsum dolor sit amet.</p>
+        <p>[El resto de la investigación continúa aquí una vez que se habilita el scroll].</p>
+    </div>
+
+    <script>
+        const cloudsLayer = document.getElementById('clouds-layer');
+        const hint = document.getElementById('hint');
+        let clouds = [];
+        let moveCount = 0;
+        let isUnlocked = false;
+
+        const cloudPaths = [
+            "M10.5,53.5C4.7,53.5 0,48.8 0,43C0,38 3.5,33.7 8.2,32.7C9.3,25.2 15.8,19.5 23.5,19.5C25.6,19.5 27.5,19.9 29.3,20.7C33.1,8.3 44.8,0 58.5,0C74.8,0 88,13.2 88,29.5C88,30.8 87.9,32.1 87.7,33.4C95,35.8 100,42.8 100,51C100,60.4 92.4,68 83,68L10.5,68C4.7,68 0,63.3 0,57.5C0,56.1 0.3,54.7 0.8,53.5L10.5,53.5Z",
+            "M17,62C7.6,62 0,54.4 0,45C0,36.5 6.2,29.4 14.3,28.2C15.9,18.4 24.4,11 34.5,11C35.9,11 37.3,11.2 38.6,11.5C42.8,4.5 50.4,0 59,0C71.7,0 82,10.3 82,23C82,23.6 82,24.2 81.9,24.8C89.3,27.7 94.5,35 94.5,43.5C94.5,53.7 86.2,62 76,62L17,62Z"
+        ];
+
+        class Cloud {
+            constructor(index, totalClouds) {
+                // Posicionamiento inicial en grilla para tapar bien
+                const cols = Math.ceil(Math.sqrt(totalClouds));
+                const rows = Math.ceil(totalClouds / cols);
+                const col = index % cols;
+                const row = Math.floor(index / cols);
+
+                const cellWidth = window.innerWidth / cols;
+                const cellHeight = window.innerHeight / rows;
+
+                // El "ancla" donde la nube tiende a estar
+                this.baseX = (col * cellWidth) + (Math.random() * (cellWidth * 0.8)) - (cellWidth * 0.4);
+                this.baseY = (row * cellHeight) + (Math.random() * (cellHeight * 0.8)) - (cellHeight * 0.4);
+                
+                // Posición actual
+                this.x = this.baseX;
+                this.y = this.baseY;
+
+                // Velocidad de deriva natural (MUY lenta)
+                this.driftVx = (Math.random() - 0.5) * 0.4;
+                this.driftVy = (Math.random() - 0.5) * 0.2;
+
+                // Estados
+                this.isDragging = false;
+                this.hasContributed = false; // ¿Ya la movimos?
+                this.targetX = this.baseX;
+                this.targetY = this.baseY;
+
+                // Crear SVG
+                this.el = document.createElement('div');
+                this.el.className = 'cloud-element';
+                
+                // Color gris denso
+                const scale = 5 + Math.random() * 4; 
+                const opacity = 0.8 + Math.random() * 0.2; 
+                const path = cloudPaths[Math.floor(Math.random() * cloudPaths.length)];
+                
+                this.el.innerHTML = `
+                    <svg viewBox="0 0 100 70" width="${100 * scale}px" height="${70 * scale}px" style="opacity: ${opacity};">
+                        <path fill="#2c2c2c" d="${path}" />
+                    </svg>
+                `;
+                
+                cloudsLayer.appendChild(this.el);
+
+                // Bindings
+                this.onPointerDown = this.onPointerDown.bind(this);
+                this.onPointerMove = this.onPointerMove.bind(this);
+                this.onPointerUp = this.onPointerUp.bind(this);
+
+                this.el.addEventListener('pointerdown', this.onPointerDown);
+            }
+
+            onPointerDown(e) {
+                if (isUnlocked) return;
+                this.isDragging = true;
+                hint.classList.add('hidden');
+                
+                this.el.setPointerCapture(e.pointerId);
+                const rect = this.el.getBoundingClientRect();
+                this.offsetX = e.clientX - rect.left;
+                this.offsetY = e.clientY - rect.top;
+                
+                // Guardamos dónde empezó el click para calcular cuánto la movió
+                this.dragStartX = this.x;
+                this.dragStartY = this.y;
+
+                this.el.addEventListener('pointermove', this.onPointerMove);
+                this.el.addEventListener('pointerup', this.onPointerUp);
+                this.el.addEventListener('pointercancel', this.onPointerUp);
+            }
+
+            onPointerMove(e) {
+                if (!this.isDragging) return;
+                // Actualiza el objetivo del cursor
+                this.targetX = e.clientX - this.offsetX;
+                this.targetY = e.clientY - this.offsetY;
+            }
+
+            onPointerUp(e) {
+                this.isDragging = false;
+                this.el.releasePointerCapture(e.pointerId);
+                this.el.removeEventListener('pointermove', this.onPointerMove);
+                this.el.removeEventListener('pointerup', this.onPointerUp);
+                this.el.removeEventListener('pointercancel', this.onPointerUp);
+
+                // Si la movió más de 60px de donde la agarró, cuenta como movimiento válido
+                const dist = Math.hypot(this.x - this.dragStartX, this.y - this.dragStartY);
+                if (dist > 60 && !this.hasContributed) {
+                    this.hasContributed = true;
+                    moveCount++;
+                    checkUnlock();
+                }
+
+                // La nube se ancla en su nueva posición y retoma la deriva desde ahí
+                this.baseX = this.x;
+                this.baseY = this.y;
+            }
+
+            update() {
+                if (this.isDragging) {
+                    // Interpolación lineal (lerp) para que siga al cursor suavemente (factor 0.15)
+                    this.x += (this.targetX - this.x) * 0.15;
+                    this.y += (this.targetY - this.y) * 0.15;
+                } else {
+                    // Deriva natural: el ancla se mueve sola de a poquito
+                    this.baseX += this.driftVx;
+                    this.baseY += this.driftVy;
+
+                    // Efecto Pac-Man: si se va por un borde, aparece por el otro
+                    const margin = 300;
+                    if (this.baseX > window.innerWidth + margin) this.baseX = -margin;
+                    if (this.baseX < -margin) this.baseX = window.innerWidth + margin;
+                    if (this.baseY > window.innerHeight + margin) this.baseY = -margin;
+                    if (this.baseY < -margin) this.baseY = window.innerHeight + margin;
+
+                    // La nube sigue suavemente a su ancla
+                    this.x += (this.baseX - this.x) * 0.05;
+                    this.y += (this.baseY - this.y) * 0.05;
+                }
+
+                this.el.style.transform = `translate(${this.x}px, ${this.y}px)`;
+            }
+        }
+
+        // Crear 24 nubes para un cielo denso
+        const totalClouds = 24;
+        for (let i = 0; i < totalClouds; i++) {
+            clouds.push(new Cloud(i, totalClouds));
+        }
+
+        // Bucle de renderizado
+        function animate() {
+            clouds.forEach(cloud => cloud.update());
+            requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+
+        function checkUnlock() {
+            // MAGIA: Al 5to movimiento, se revela el artículo
+            if (moveCount >= 5 && !isUnlocked) {
+                isUnlocked = true;
+                document.body.classList.remove('locked');
+                
+                // Desvanecimiento etéreo de las nubes
+                clouds.forEach(cloud => {
+                    cloud.el.style.pointerEvents = 'none'; // Ya no se tocan
+                    cloud.el.style.opacity = '0';
+                });
+            }
+        }
+    </script>
+</body>
+</html>

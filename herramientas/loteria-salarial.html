@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Lotería del Código Postal | RENDER_FINAL</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- ESTILOS BASE RENDER_FINAL --- */
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --accent: #0000FF; 
+            --alarm: #ff0000;
+            --terminal: #00ffd5;
+        }
+
+        ::selection { background: var(--terminal); color: #000; }
+
+        body {
+            background-color: var(--bg); color: var(--text);
+            font-family: 'Space Mono', monospace; margin: 0; padding: 0;
+            line-height: 1.6; overflow-x: hidden;
+        }
+
+        /* --- MARQUESINA Y HEADER --- */
+        .marquee-container {
+            background: var(--text); color: var(--bg); overflow: hidden; white-space: nowrap;
+            padding: 8px 0; font-size: 0.8rem; text-transform: uppercase; border-bottom: 2px solid var(--accent);
+        }
+        .marquee-content { display: inline-block; animation: marquee 60s linear infinite; }
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-50%, 0); } }
+
+        .site-header {
+            padding: 1rem 5%; border-bottom: 2px solid var(--text); 
+            background: rgba(255,255,255,0.98); z-index: 100; position: sticky; top: 0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.8rem; letter-spacing: -1px; text-decoration: none; color: var(--text); }
+        .blink { animation: blinker 1s linear infinite; color: var(--accent); }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        /* --- FORMATO DE ARTÍCULO --- */
+        .article-container { max-width: 720px; margin: 0 auto; padding: 60px 20px 100px 20px; }
+        .article-header { display: block; text-align: left; margin-bottom: 50px; border-bottom: 4px solid #000; padding-bottom: 40px; position: relative; }
+        .article-title { font-family: 'Archivo', sans-serif; font-size: clamp(3rem, 6vw, 4.5rem); line-height: 0.95; margin: 0 0 25px 0; color: #000; text-transform: uppercase; letter-spacing: -1px;}
+        .article-bajada { font-size: 1.3rem; color: #333; line-height: 1.4; margin-bottom: 30px; font-weight: 400; font-family: 'Space Mono', monospace; }
+        .article-meta { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 1px; display: block; border-top: 1px solid #ddd; padding-top: 15px; }
+        
+        .article-cover { width: 100%; margin-bottom: 50px; border: 2px solid #000; box-shadow: 8px 8px 0 var(--accent); filter: grayscale(100%); transition: all 0.3s ease; }
+        .article-cover:hover { filter: grayscale(0%); transform: translate(-2px, -2px); box-shadow: 10px 10px 0 var(--accent); }
+
+        .article-body { font-family: 'Arial', sans-serif; font-size: 1.15rem; line-height: 1.8; color: #111; }
+        .article-body p { margin-bottom: 1.8rem; }
+        .article-body h3 { font-family: 'Archivo', sans-serif; font-size: 1.8rem; text-transform: uppercase; margin: 3rem 0 1.5rem 0; line-height: 1.2; border-bottom: 2px solid #000; display: inline-block; padding-bottom: 5px; }
+        blockquote { font-family: 'Space Mono', monospace; font-size: 1.2rem; line-height: 1.6; border-left: 4px solid var(--accent); margin: 40px 0; padding-left: 20px; color: #333; background: #f9f9f9; padding: 20px;}
+
+        .reveal-on-scroll { opacity: 0; transform: translateY(40px); transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
+        .reveal-on-scroll.is-visible { opacity: 1; transform: translateY(0); }
+
+        /* --- NUEVO WIDGET: EL CASINO SALARIAL --- */
+        .casino-widget {
+            width: 100%; max-width: 720px; margin: 60px auto; 
+            background: #111; border: 6px solid #000; box-shadow: 12px 12px 0 var(--accent);
+            padding: 30px; box-sizing: border-box; text-align: center; color: #fff;
+            position: relative; overflow: hidden;
+        }
+        
+        /* Efecto grilla de fondo del casino */
+        .casino-widget::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px; z-index: 1; pointer-events: none;
+        }
+
+        .casino-header h2 { font-family: 'Archivo', sans-serif; font-size: 2.5rem; margin: 0 0 5px 0; text-transform: uppercase; color: #fff; line-height: 1; position: relative; z-index: 2;}
+        .casino-header p { font-family: 'Space Mono', monospace; font-size: 0.85rem; color: var(--terminal); margin: 0 0 30px 0; text-transform: uppercase; position: relative; z-index: 2;}
+
+        /* Las ventanas de la tragamonedas */
+        .slots-container { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; position: relative; z-index: 2;}
+        .slot-window {
+            background: #fff; color: #000; border: 4px solid #333; padding: 15px; 
+            font-family: 'Archivo', sans-serif; font-size: 2rem; text-transform: uppercase;
+            box-shadow: inset 0 5px 10px rgba(0,0,0,0.2); position: relative; overflow: hidden;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .slot-label { font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: bold; color: #666; text-align: left; width: 100px; line-height: 1.1;}
+        .slot-value { font-size: clamp(1.5rem, 4vw, 2.5rem); text-align: right; flex: 1; letter-spacing: -1px; }
+        
+        /* Efecto Blur al girar */
+        .slot-value.spinning { filter: blur(3px); color: var(--accent); }
+
+        /* Botonera */
+        .casino-controls { display: flex; gap: 10px; position: relative; z-index: 2; flex-wrap: wrap;}
+        .btn-spin {
+            flex: 2; background: var(--accent); color: #fff; font-family: 'Archivo', sans-serif; font-size: 1.5rem;
+            border: 3px solid #fff; padding: 15px; cursor: pointer; text-transform: uppercase; transition: all 0.1s;
+        }
+        .btn-spin:hover { background: #fff; color: var(--accent); border-color: var(--accent); }
+        .btn-spin:active { transform: scale(0.98); }
+        
+        .prov-select {
+            flex: 1; font-family: 'Space Mono', monospace; font-size: 0.8rem; font-weight: bold;
+            padding: 15px; border: 3px solid #fff; background: #000; color: #fff; cursor: pointer; border-radius: 0; appearance: none;
+            text-transform: uppercase; min-width: 150px;
+        }
+
+        /* Pantalla Final de Resultado */
+        .result-screen {
+            margin-top: 25px; padding: 20px; border: 3px dashed #555; background: #000; display: none; position: relative; z-index: 2;
+        }
+        .result-screen.show { display: block; animation: turnOn 0.1s; }
+        @keyframes turnOn { from { opacity: 0; } to { opacity: 1; } }
+
+        .r-title { font-family: 'Archivo', sans-serif; font-size: 3rem; margin: 0; line-height: 1;}
+        .r-sub { font-family: 'Space Mono', monospace; font-size: 1rem; margin-top: 10px; }
+        
+        /* Estados del resultado */
+        .result-gameover { border-color: var(--alarm); background: rgba(255,0,0,0.1); }
+        .result-gameover .r-title { color: var(--alarm); animation: glitch 0.5s infinite; }
+        .result-jackpot { border-color: var(--terminal); background: rgba(0,255,213,0.1); }
+        .result-jackpot .r-title { color: var(--terminal); }
+
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        .disclaimer-box { background: #f4f4f4; border: 2px dashed #000; padding: 25px; margin-top: 60px; font-size: 0.85rem; font-family: 'Space Mono', monospace; line-height: 1.6; color: #333;}
+        footer { margin-top: 60px; padding: 30px 5%; border-top: 2px solid var(--text); display: flex; justify-content: space-between; font-size: 0.75rem; background: #f9f9f9; }
+        @media (max-width: 600px) { footer { flex-direction: column; gap: 10px; text-align: center; } .casino-controls{flex-direction: column;} }
+    </style>
+</head>
+<body>
+
+    <div class="marquee-container">
+        <div class="marquee-content">
+            RENDER_FINAL_ [v.2.0.26] /// PERIODISMO DE DATOS Y NARRATIVAS VISUALES /// LA VERDAD ESTÁ EN EL ARCHIVO /// PROCESANDO SEÑAL /// RENDER_FINAL_ [v.2.0.26] /// PERIODISMO DE DATOS Y NARRATIVAS VISUALES /// LA VERDAD ESTÁ EN EL ARCHIVO /// PROCESANDO SEÑAL /// 
+        </div>
+    </div>
+    <header class="site-header">
+        <a href="#" class="logo">RENDER_FINAL<span class="blink">_</span></a>
+    </header>
+
+    <main class="article-container">
+        
+        <header class="article-header reveal-on-scroll">
+            <h1 class="article-title">La lotería del código postal</h1>
+            <p class="article-bajada">Nacer en Argentina es tirar los dados. El lugar donde te emiten el DNI define si tu sueldo te permite ahorrar o si caés en quiebra técnica el día 15.</p>
+            <span class="article-meta">:: DATOS | POR REDACCIÓN RENDER | 11.03.26</span>
+        </header>
+
+        <img src="https://images.unsplash.com/photo-1599059813005-11265ba4b4ce?auto=format&fit=crop&w=1200&q=80" class="article-cover reveal-on-scroll" alt="Dados de casino cayendo">
+
+        <div class="article-body">
+            
+            <p class="reveal-on-scroll">El mercado laboral formal argentino dejó de ser una garantía de movilidad social para convertirse en un casino geográfico. El último informe sobre la remuneración promedio en el sector privado (cruzado con el costo real de vida y los valores de alquileres) revela que el esfuerzo individual ya no mueve la aguja: <strong>tu viabilidad financiera la dicta tu latitud.</strong></p>
+
+            <p class="reveal-on-scroll">Si medimos la economía en tiempo real, las cuentas son brutales. No se trata solo de la Canasta Básica (pobreza estructural), sino de sumar el costo de un alquiler promedio. Para una familia, sobrevivir en Argentina cuesta hoy entre 1.1 y 1.4 millones de pesos, dependiendo de la región.</p>
+
+            <div class="casino-widget reveal-on-scroll" id="widget-casino">
+                <div class="casino-header">
+                    <h2>Terminal de la Suerte</h2>
+                    <p>>> Simule su destino macroeconómico.</p>
+                </div>
+
+                <div class="slots-container">
+                    <div class="slot-window">
+                        <div class="slot-label">ZONA<br>ASIGNADA:</div>
+                        <div class="slot-value" id="slot-prov">---</div>
+                    </div>
+                    <div class="slot-window">
+                        <div class="slot-label">INGRESO<br>PROMEDIO:</div>
+                        <div class="slot-value" id="slot-ingreso" style="color:var(--accent);">---</div>
+                    </div>
+                    <div class="slot-window">
+                        <div class="slot-label">COSTO DE<br>VIDA TOTAL*:</div>
+                        <div class="slot-value" id="slot-gasto" style="color:var(--alarm);">---</div>
+                    </div>
+                </div>
+
+                <div class="casino-controls">
+                    <select class="prov-select" id="provSelect">
+                        <option value="random">🎲 MODO ALEATORIO (Ruleta)</option>
+                        <option disabled>------------------------</option>
+                        <option value="neuquen">Neuquén</option>
+                        <option value="caba">Cdad. Autónoma Bs. As.</option>
+                        <option value="santafe">Santa Fe</option>
+                        <option value="cordoba">Córdoba</option>
+                        <option value="entrerios">Entre Ríos</option>
+                        <option value="chaco">Chaco</option>
+                        <option value="santiago">Santiago del Estero</option>
+                    </select>
+                    <button class="btn-spin" onclick="tirarPalanca()">[ TIRAR LA PALANCA ]</button>
+                </div>
+
+                <div class="result-screen" id="resultScreen">
+                    <h3 class="r-title" id="r-title">...</h3>
+                    <div class="r-sub" id="r-sub">...</div>
+                </div>
+            </div>
+
+            <h3 class="reveal-on-scroll">El sistema está trucado</h3>
+            
+            <p class="reveal-on-scroll">Cuando la máquina se detiene, el mapa del país se divide en dos colores. El sur extractivo (Neuquén, Santa Cruz, Chubut) funciona como el "Jackpot" del sistema. Sostenidos por regímenes laborales petroleros y mineros, sus habitantes logran sueldos promedio que perforan la barrera del millón y medio, absorbiendo incluso los altísimos costos de los alquileres patagónicos.</p>
+
+            <blockquote class="reveal-on-scroll">
+                "La geografía económica reemplazó al mérito. Mientras el discurso público debate la productividad, la realidad material está dictaminada por la suerte del código postal."
+            </blockquote>
+
+            <p class="reveal-on-scroll">Para el centro y norte del país, la pantalla casi siempre escupe un "Game Over". En provincias como Santa Fe, Córdoba o Entre Ríos —históricos motores productivos y agroindustriales— el salario industrial promedio quedó estancado frente a una inflación de servicios que no da tregua. Allí, la quiebra técnica (ganar menos de lo que cuesta vivir bajo techo) es la norma, obligando a las familias formales a endeudarse sistemáticamente para llegar al día 30.</p>
+
+            <div class="disclaimer-box reveal-on-scroll">
+                <strong>*ACLARACIÓN DE COSTOS DE VIDA<span class="blink">_</span></strong><br><br>
+                A diferencia de los índices oficiales básicos, esta herramienta incorpora a la Canasta Básica Total (CBT) del INDEC un factor de distorsión local basado en los datos más recientes del mercado inmobiliario (Alquiler Promedio de unidad 3 ambientes). Por lo tanto, el "Costo de Vida Total" varía según la zona asignada (Sur, Centro, CABA o Norte), brindando un diagnóstico hiperrealista de la economía de bolsillo.
+            </div>
+
+        </div>
+    </main>
+
+    <footer>
+        <div><strong>CONTACTO:</strong> editorial@renderfinal.com</div>
+        <div>&copy; 2026 RENDER_FINAL. Todos los derechos reservados.</div>
+    </footer>
+
+    <script>
+        // 1. BASE DE DATOS OPTIMIZADA CON COSTO DE VIDA REGIONALIZADO
+        // CBT Base ~980k + Alquiler y variables zonales
+        const database = {
+            "neuquen": { nombre: "Neuquén", salario: 1980000, costo: 1550000 },
+            "santacruz": { nombre: "Santa Cruz", salario: 1650000, costo: 1450000 },
+            "tdf": { nombre: "Tierra del Fuego", salario: 1580000, costo: 1400000 },
+            "chubut": { nombre: "Chubut", salario: 1500000, costo: 1350000 },
+            "caba": { nombre: "C.A.B.A.", salario: 1350000, costo: 1380000 },
+            "rionegro": { nombre: "Río Negro", salario: 1250000, costo: 1200000 },
+            "pba": { nombre: "Buenos Aires", salario: 1050000, costo: 1150000 },
+            "santafe": { nombre: "Santa Fe", salario: 995000, costo: 1100000 },
+            "cordoba": { nombre: "Córdoba", salario: 940000, costo: 1100000 },
+            "mendoza": { nombre: "Mendoza", salario: 920000, costo: 1050000 },
+            "entrerios": { nombre: "Entre Ríos", salario: 860000, costo: 1000000 },
+            "salta": { nombre: "Salta", salario: 750000, costo: 980000 },
+            "tucuman": { nombre: "Tucumán", salario: 740000, costo: 950000 },
+            "chaco": { nombre: "Chaco", salario: 680000, costo: 950000 },
+            "santiago": { nombre: "S. del Estero", salario: 590000, costo: 900000 }
+        };
+
+        const keys = Object.keys(database);
+
+        function formatearDinero(num) {
+            return "$ " + Math.round(num).toLocaleString('es-AR');
+        }
+
+        let spinInterval;
+        let isSpinning = false;
+
+        function tirarPalanca() {
+            if (isSpinning) return;
+            isSpinning = true;
+
+            const mode = document.getElementById('provSelect').value;
+            const resScreen = document.getElementById('resultScreen');
+            resScreen.classList.remove('show', 'result-gameover', 'result-jackpot');
+
+            const sProv = document.getElementById('slot-prov');
+            const sIngr = document.getElementById('slot-ingreso');
+            const sGast = document.getElementById('slot-gasto');
+
+            // Añadir blur para efecto giro
+            sProv.classList.add('spinning');
+            sIngr.classList.add('spinning');
+            sGast.classList.add('spinning');
+
+            let counter = 0;
+            // Animación rápida de números aleatorios
+            spinInterval = setInterval(() => {
+                let randomKey = keys[Math.floor(Math.random() * keys.length)];
+                let tempProv = database[randomKey];
+                
+                sProv.innerText = tempProv.nombre;
+                sIngr.innerText = formatearDinero(tempProv.salario);
+                sGast.innerText = formatearDinero(tempProv.costo);
+                
+                counter++;
+                // Detener a los 1.5 segundos
+                if(counter > 20) {
+                    clearInterval(spinInterval);
+                    finalizarGiro(mode);
+                }
+            }, 60); // 60ms = rápido como tragamonedas
+        }
+
+        function finalizarGiro(mode) {
+            let selectedKey;
+            
+            // Lógica de resultado
+            if(mode === 'random') {
+                // Hacer trampa para el azar (hay más chances de perder porque hay más provincias pobres)
+                selectedKey = keys[Math.floor(Math.random() * keys.length)];
+            } else {
+                selectedKey = mode;
+            }
+
+            const finalData = database[selectedKey];
+            const saldo = finalData.salario - finalData.costo;
+
+            const sProv = document.getElementById('slot-prov');
+            const sIngr = document.getElementById('slot-ingreso');
+            const sGast = document.getElementById('slot-gasto');
+
+            // Quitar blur
+            sProv.classList.remove('spinning');
+            sIngr.classList.remove('spinning');
+            sGast.classList.remove('spinning');
+
+            // Setear valores finales
+            sProv.innerText = finalData.nombre;
+            sIngr.innerText = formatearDinero(finalData.salario);
+            sGast.innerText = formatearDinero(finalData.costo);
+
+            // Mostrar diagnóstico
+            const resScreen = document.getElementById('resultScreen');
+            const rTitle = document.getElementById('r-title');
+            const rSub = document.getElementById('r-sub');
+
+            if(saldo < 0) {
+                resScreen.className = 'result-screen result-gameover show';
+                rTitle.innerText = "GAME OVER / QUIEBRA";
+                rSub.innerHTML = `El salario promedio no alcanza para sobrevivir. <br><strong>Déficit mensual: ${formatearDinero(Math.abs(saldo))}</strong>`;
+            } else {
+                resScreen.className = 'result-screen result-jackpot show';
+                rTitle.innerText = "JACKPOT / SOBREVIVÍS";
+                rSub.innerHTML = `¡Lográs llegar a fin de mes! <br><strong>Capacidad de ahorro: ${formatearDinero(saldo)}</strong>`;
+            }
+
+            isSpinning = false;
+        }
+
+        // SCROLLYTELLING ANIMATION
+        const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
+        const articleObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal-on-scroll').forEach(el => { articleObserver.observe(el); });
+    </script>
+</body>
+</html>

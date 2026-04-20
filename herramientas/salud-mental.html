@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La brecha que asfixia | RENDER_FINAL</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- ESTILOS BASE RENDER_FINAL (SIN NEGRO DE FONDO, SIN ROJO) --- */
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --accent: #0000FF; 
+            --surface: #f4f4f4;
+            --border: #111111;
+            --muted: #cccccc;
+        }
+
+        ::selection { background: var(--accent); color: #fff; }
+
+        body {
+            background-color: var(--bg); color: var(--text);
+            font-family: 'Space Mono', monospace; margin: 0; padding: 0;
+            line-height: 1.6; overflow-x: hidden;
+        }
+
+        .blink { animation: blinker 1s linear infinite; color: var(--accent); }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        /* --- HEADER SITE --- */
+        .site-header {
+            padding: 1rem 5%; border-bottom: 2px solid var(--border); 
+            background: rgba(255,255,255,0.98); z-index: 100; position: sticky; top: 0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.8rem; letter-spacing: -1px; text-decoration: none; color: var(--border); }
+
+        /* --- CONTENEDOR CENTRAL --- */
+        .article-container { max-width: 720px; margin: 0 auto; padding: 60px 20px; box-sizing: border-box;}
+        
+        .article-header { margin-bottom: 50px; border-bottom: 4px solid var(--border); padding-bottom: 40px; }
+        .article-title { font-family: 'Archivo', sans-serif; font-size: clamp(2.5rem, 8vw, 4.5rem); line-height: 0.95; margin: 0 0 20px 0; color: var(--border); text-transform: uppercase; letter-spacing: -1px;}
+        .article-bajada { font-size: 1.3rem; color: #333; line-height: 1.4; margin-bottom: 30px; font-weight: 400; font-family: 'Space Mono', monospace; }
+        .article-meta { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 1px; display: block; border-top: 1px solid var(--muted); padding-top: 15px; margin-top: 30px;}
+
+        .article-text { font-size: 1.15rem; line-height: 1.8; margin-bottom: 30px; }
+        .article-text strong { color: var(--accent); background: rgba(0,0,255,0.05); padding: 0 4px; }
+        h3 { font-family: 'Archivo', sans-serif; font-size: clamp(1.5rem, 5vw, 1.8rem); text-transform: uppercase; margin: 3rem 0 1.5rem 0; line-height: 1.2; border-bottom: 2px solid var(--border); display: inline-block; padding-bottom: 5px; color: var(--border); }
+        blockquote { font-family: 'Space Mono', monospace; font-size: 1.1rem; line-height: 1.6; border-left: 4px solid var(--accent); margin: 40px 0; padding-left: 20px; color: #111; background: var(--surface); padding: 20px;}
+
+        /* --- SISTEMA INTERACTIVO (CLARO Y AZUL) --- */
+        .system-widget {
+            margin: 60px 0;
+            border: 4px solid var(--border);
+            box-shadow: 12px 12px 0 var(--accent);
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .system-header {
+            background: var(--surface); color: var(--border); padding: 15px 20px;
+            font-family: 'Space Mono', monospace; font-size: 0.85rem; font-weight: bold; text-transform: uppercase;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 4px solid var(--border);
+        }
+
+        .system-screen {
+            background: var(--bg);
+            height: 280px; 
+            padding: 20px;
+            overflow-y: auto;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.95rem;
+            color: var(--text);
+            border-bottom: 4px solid var(--border);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            transition: all 0.1s;
+        }
+
+        /* Glitch pero en azul/blanco, nada de rojo/negro */
+        .system-screen.glitch-error { background: var(--accent); color: #fff; }
+        .system-screen.glitch-error .cmd-line { color: #fff; }
+        .system-screen.glitch-error .highlight { color: var(--accent); background: #fff; }
+
+        .cmd-line { margin: 0 0 10px 0; line-height: 1.4; opacity: 1; transition: opacity 0.2s;}
+        .cmd-line.success { color: var(--accent); font-weight: bold;}
+        .cmd-line.error { color: var(--accent); font-weight: bold; text-decoration: underline;}
+        .highlight { background: var(--surface); color: var(--accent); border: 1px solid var(--accent); padding: 0 5px; font-weight: bold;}
+
+        /* Botonera */
+        .system-controls {
+            padding: 20px; display: grid; gap: 15px; background: var(--surface);
+        }
+
+        .sys-btn {
+            background: var(--bg); color: var(--border); border: 2px solid var(--border);
+            padding: 15px; font-family: 'Space Mono', monospace; font-weight: bold;
+            text-transform: uppercase; cursor: pointer; transition: all 0.2s;
+            text-align: left; font-size: 0.9rem; position: relative; overflow: hidden;
+        }
+
+        .sys-btn:hover:not(:disabled) { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .sys-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+        .sys-btn.locked { background: transparent; color: var(--muted); border-color: var(--muted); text-decoration: line-through;}
+
+        /* --- CONCLUSIÓN OCULTA --- */
+        .conclusion-box { display: none; opacity: 0; transition: opacity 1s ease-in; margin-top: 60px; padding-top: 40px; border-top: 4px solid var(--border); }
+        .conclusion-box.revealed { display: block; opacity: 1; }
+
+        .reveal-on-scroll { opacity: 0; transform: translateY(40px); transition: all 0.8s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .reveal-on-scroll.is-visible { opacity: 1; transform: translateY(0); }
+
+        /* Botón final (Fix responsive corchetes) */
+        .btn-action { 
+            display: inline-block; background: transparent; color: var(--border); border: 2px solid var(--border); 
+            padding: 15px 20px; font-family: 'Space Mono', monospace; font-weight: bold; 
+            cursor: pointer; text-transform: uppercase; text-decoration: none; 
+            transition: all 0.2s; width: 100%; max-width: 450px; text-align: center;
+            white-space: nowrap; font-size: clamp(0.6rem, 2.5vw, 0.85rem); margin-top: 10px;
+        }
+        .btn-action:hover { background: var(--border); color: #fff; }
+
+        @media (max-width: 768px) {
+            .system-screen { height: 350px; font-size: 0.85rem; }
+            .sys-btn { font-size: 0.8rem; padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+    
+    <header class="site-header">
+        <a href="#" class="logo">RENDER_FINAL<span class="blink">_</span></a>
+    </header>
+
+    <main class="article-container">
+        
+        <header class="article-header">
+            <h1 class="article-title">La brecha que asfixia</h1>
+            <p class="article-bajada">Levantar el teléfono para pedir ayuda es el paso más difícil. Pero en la Argentina actual, ese es apenas el comienzo. Lo que sigue es un laberinto diseñado para expulsar a quienes no pueden pagar.</p>
+            <span class="article-meta">:: INVESTIGACIÓN NACIONAL | POR [TU NOMBRE] | MARZO 2026</span>
+        </header>
+
+        <p class="article-text reveal-on-scroll">El relato de la concientización funcionó: hoy se habla de salud mental mucho más que hace una década. Se rompieron tabúes, se expuso la fragilidad de las exigencias modernas y se naturalizó la necesidad de buscar terapia. Sin embargo, la emergencia sanitaria ha dejado de ser un tema de diván para convertirse en una olla a presión que golpea a familias en todos los rincones del país.</p>
+
+        <p class="article-text reveal-on-scroll">Cuando alguien junta el coraje para pedir auxilio y evitar ser parte de la estadística, choca de frente contra un sistema que responde con desfinanciamiento, burocracia extrema o aranceles prohibitivos. La salud mental se ha convertido, en los hechos, en <strong>un estricto filtro por capacidad de pago</strong>.</p>
+
+        <h3 class="reveal-on-scroll">El colapso federal</h3>
+
+        <p class="article-text reveal-on-scroll">Ya no estamos hablando de episodios aislados en el AMBA o de deficiencias locales temporales; es un colapso operativo nacional. Según datos relevados recientemente, en la provincia de <strong>Mendoza</strong> la demanda en las áreas de Salud Mental ha alcanzado su límite absoluto, operando con una alarmante ocupación del 100% de las camas disponibles.</p>
+
+        <p class="article-text reveal-on-scroll">El desborde no da tregua. En el Litoral, la postal es igualmente desoladora. En <strong>Santa Fe</strong>, solo en el departamento La Capital, se advirtió la dolorosa cifra de 150 suicidios durante 2025. En <strong>Entre Ríos</strong>, los colapsos en las guardias del Hospital San José y el Colonia de Diamante dejaron en evidencia que los intentos de suicidio, especialmente en jóvenes y adolescentes, superan ampliamente cualquier red de contención pública.</p>
+
+        <blockquote class="reveal-on-scroll">
+            Las guardias y servicios especializados no dan abasto ante cuadros graves de ansiedad, depresión y conductas de riesgo que hoy son la prioridad sanitaria absoluta.
+        </blockquote>
+
+        <h3 class="reveal-on-scroll">La barrera del bolsillo</h3>
+
+        <p class="article-text reveal-on-scroll">Si el Estado se retira de la primera línea de fuego, el sector privado se encarga de cerrar la puerta con llave. El éxodo de profesionales de las obras sociales y prepagas es casi total, empujado por aranceles pisados y pagos diferidos a 90 días con inflación. Tener cobertura médica hoy equivale a una cartilla vacía o a la exigencia de copagos ilegales altísimos.</p>
+
+        <p class="article-text reveal-on-scroll">Ante esto, la opción particular es una quimera. Un relevamiento a nivel nacional demuestra que <strong>el promedio de una sesión de psicología oscila entre los 30.000 y 40.000 pesos</strong>. Si la urgencia requiere intervención psiquiátrica, la consulta se dispara entre los <strong>60.000 y 150.000 pesos</strong>.</p>
+
+        <div class="system-widget reveal-on-scroll" id="simulador">
+            <div class="system-header">
+                <span>>>> SIMULADOR DE ASIGNACIÓN DE TURNOS</span>
+                <span id="sys-status" style="color: var(--accent);">[ SISTEMA ACTIVO ]</span>
+            </div>
+            
+            <div class="system-screen" id="screen-output">
+                <p class="cmd-line">Iniciando protocolo de derivación sanitaria...</p>
+                <p class="cmd-line">El paciente requiere atención urgente para sostener tratamiento.</p>
+                <p class="cmd-line" style="color: var(--accent); font-weight: bold;">>>> SELECCIONE UNA VÍA DE ATENCIÓN ABAJO PARA CONTINUAR_</p>
+            </div>
+
+            <div class="system-controls">
+                <button class="sys-btn" id="btn-public" onclick="processRequest('public')">[ 1 ] SOLICITAR TURNO: HOSPITAL PÚBLICO</button>
+                <button class="sys-btn" id="btn-social" onclick="processRequest('social')">[ 2 ] CONSULTAR RED: OBRA SOCIAL / PREPAGA</button>
+                <button class="sys-btn" id="btn-private" onclick="processRequest('private')">[ 3 ] COTIZAR TRATAMIENTO: SECTOR PRIVADO</button>
+            </div>
+        </div>
+
+        <div id="final-conclusion" class="conclusion-box">
+            <h3 class="reveal-on-scroll">La política de espaldas</h3>
+            
+            <p class="article-text reveal-on-scroll">El simulador anterior no es un juego; es la asfixia exacta que transita un paciente en la Argentina actual. Una familia tipo necesitó en febrero <strong>$1.397.672 para no ser pobre</strong>. La inmensa mayoría de los trabajadores no logra percibir ingresos que cubran siquiera la mitad de esa cifra, empujando a los hogares a un estado de estrés crónico e incertidumbre que es, irónicamente, el principal detonante de las crisis mentales.</p>
+
+            <p class="article-text reveal-on-scroll">Mientras el ciudadano común sufre el quiebre de su bienestar mental bajo el peso de una inflación que devora los salarios, quienes deben diseñar las políticas de salud viven una realidad paralela. Un Senador Nacional percibe dietas que superan los <strong>11 millones de pesos</strong>, mientras que los funcionarios locales rondan los 7 millones.</p>
+            
+            <p class="article-text reveal-on-scroll">Esta diferencia abismal marca una desconexión letal con el sufrimiento del pueblo. No se puede hablar de políticas de salud mental efectivas cuando quienes las dirigen gozan de una solvencia que les garantiza acceso privilegiado a la salud, ignorando por completo las angustias económicas que hoy están quebrando a la población.</p>
+
+            <p class="article-text reveal-on-scroll" style="font-family: 'Space Mono', monospace; font-size: 1.15rem; color: var(--accent); font-weight: bold; border-left: 4px solid var(--accent); padding-left: 15px; margin-top: 40px;">
+                El sistema no está roto. Está funcionando exactamente como fue diseñado: abandonando al que no puede pagar.
+            </p>
+
+            <div style="background: var(--surface); border: 2px dashed var(--muted); padding: 30px; text-align: center; margin-top: 60px;">
+                <p style="font-family: 'Space Mono', monospace; font-weight: bold; margin: 0 0 15px 0;">>>> RED NACIONAL DE ASISTENCIA AL SUICIDA</p>
+                <a href="tel:135" class="btn-action">[ LLAMAR AL 135 DESDE TODO EL PAÍS ]</a>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // DATOS PARA LA CONSOLA 
+        const scripts = {
+            public: [
+                "Conectando con red sanitaria pública...",
+                "Escaneando disponibilidad en Gran Mendoza... <span class='highlight'>[ 100% CAMAS OCUPADAS ]</span>",
+                "Verificando reportes de Santa Fe... [ ALERTA: 150 CASOS CRÍTICOS ]",
+                "Guardias provinciales reportan desborde absoluto.",
+                "<span class='cmd-line error'>>>> FALLO DE SISTEMA: COLAPSO OPERATIVO. TURNO DENEGADO.</span>"
+            ],
+            social: [
+                "Validando credenciales de paciente...",
+                "Buscando profesionales en cartilla médica actualizada...",
+                "Analizando red de prestadores... <span class='highlight'>[ ÉXODO MASIVO DETECTADO ]</span>",
+                "Motivo de baja: Aranceles licuados y demoras de pago.",
+                "<span class='cmd-line error'>>>> FALLO DE SISTEMA: CARTILLA VACÍA O EXIGE COPAGO POR FUERA DE LA LEY.</span>"
+            ],
+            private: [
+                "Calculando presupuesto en sector privado...",
+                "Psicología (4 sesiones/mes): Promedio $160.000.",
+                "Psiquiatría (1 consulta/mes): Promedio $100.000.",
+                "Costo de mantenimiento clínico: <span class='highlight'>$260.000 mensuales</span>.",
+                "Comparando contra ingreso de trabajador promedio...",
+                "<span class='cmd-line error'>>>> FALLO DE SISTEMA: EL PACIENTE NO POSEE FONDOS PARA SANAR.</span>"
+            ]
+        };
+
+        const state = { public: false, social: false, private: false };
+        let isTyping = false;
+
+        const screen = document.getElementById('screen-output');
+        const buttons = document.querySelectorAll('.sys-btn');
+
+        function processRequest(path) {
+            if (isTyping || state[path]) return; 
+
+            isTyping = true;
+            state[path] = true;
+
+            buttons.forEach(btn => btn.disabled = true);
+            screen.innerHTML = '';
+            
+            const lines = scripts[path];
+            playSequence(lines, 0, path);
+        }
+
+        function playSequence(lines, index, path) {
+            if (index < lines.length) {
+                const p = document.createElement('p');
+                p.className = 'cmd-line';
+                screen.appendChild(p);
+                
+                typeLine(p, lines[index], () => {
+                    if(index === lines.length - 1) {
+                        triggerGlitch();
+                    }
+                    screen.scrollTop = screen.scrollHeight;
+                    setTimeout(() => playSequence(lines, index + 1, path), 400);
+                });
+            } else {
+                finishSequence(path);
+            }
+        }
+
+        function typeLine(element, htmlString, callback) {
+            element.innerHTML = htmlString; 
+            element.style.opacity = 0;
+            
+            setTimeout(() => {
+                element.style.opacity = 1;
+                callback();
+            }, 100); 
+        }
+
+        function triggerGlitch() {
+            screen.classList.add('glitch-error');
+            setTimeout(() => screen.classList.remove('glitch-error'), 150);
+            setTimeout(() => screen.classList.add('glitch-error'), 250);
+            setTimeout(() => screen.classList.remove('glitch-error'), 400);
+        }
+
+        function finishSequence(path) {
+            isTyping = false;
+            
+            const btn = document.getElementById(`btn-${path}`);
+            btn.classList.add('locked');
+            btn.innerText = btn.innerText.replace('[ ', '[ BLOQUEADO - ').replace(' ]', ' ]');
+
+            buttons.forEach(b => {
+                if (!b.classList.contains('locked')) b.disabled = false;
+            });
+
+            if (state.public && state.social && state.private) {
+                document.getElementById('sys-status').innerText = '[ ACCESO RESTRINGIDO ]';
+                
+                setTimeout(() => {
+                    const conc = document.getElementById('final-conclusion');
+                    conc.classList.add('revealed');
+                    conc.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 800);
+            }
+        }
+
+        // --- OBSERVER PARA SCROLL GENERAL ---
+        const articleObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                }
+            });
+        }, { root: null, rootMargin: '0px', threshold: 0.15 });
+
+        document.querySelectorAll('.reveal-on-scroll, h3').forEach(el => { articleObserver.observe(el); });
+    </script>
+</body>
+</html>

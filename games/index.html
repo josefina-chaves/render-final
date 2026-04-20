@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Especial Render_Final | El Guardián de la Selva</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-base: #1e3718; 
+            --bg-feedback-fail: rgba(30, 50, 24, 0.98); 
+            --accent-yellow: #f39c12;
+            --accent-green: #2ecc71;
+            --text-main: #ffffff;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            font-family: 'Nunito', sans-serif; color: var(--text-main);
+            background-color: var(--bg-base); overflow: hidden;
+            transition: background-color 0.5s ease;
+        }
+
+        #game-wrapper { width: 100%; height: 100%; position: relative; display: flex; flex-direction: column; z-index: 10; }
+
+        /* ================= EL JAGUAR ESTRELLA (LA CAPA MÁS ALTA) ================= */
+        #star-3d-container {
+            position: fixed; top: 15vh; left: 0; width: 100vw; height: 60vh;
+            z-index: 100; display: flex; justify-content: center; align-items: center;
+            pointer-events: none; 
+        }
+        
+        model-viewer {
+            width: 100%; height: 100%; background-color: transparent;
+            touch-action: pan-y; pointer-events: auto; 
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.8));
+        }
+
+        /* ================= PANTALLAS (NIVELES) DETRÁS DEL 3D ================= */
+        .pantalla {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column; justify-content: space-between;
+            padding: 5vh 20px; box-sizing: border-box; text-align: center;
+            background: linear-gradient(rgba(30, 55, 24, 0.4), rgba(0, 0, 0, 0.8));
+            z-index: 50; pointer-events: none; 
+        }
+        .pantalla.active { display: flex; animation: slideUp 0.5s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Reactivamos los clics */
+        .header-ui, .game-area, .btn-primary, .btn-option, .dd-item, .dropzone, .chk-label, .quiz-box { pointer-events: auto; }
+
+        /* UI Textos */
+        .header-ui { text-align: center; max-width: 800px; margin: 0 auto; padding: 15px; border-radius: 20px; backdrop-filter: blur(5px); z-index: 60; }
+        .level-badge { font-size: 1.1rem; font-weight: 900; color: var(--accent-yellow); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 5px; display: block; }
+        h1 { font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 900; margin: 0; line-height: 1.1; color: var(--accent-green); text-transform: uppercase; }
+        h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 900; margin: 0; color: #fff; text-transform: uppercase; }
+        p.bajada { font-size: 1.25rem; line-height: 1.5; margin: 15px auto 0 auto; max-width: 700px; opacity: 0.95; }
+
+        .game-area { width: 100%; max-width: 700px; margin: auto auto 3vh auto; display: flex; flex-direction: column; gap: 10px; z-index: 60; }
+        
+        .btn-option {
+            background: rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.4); color: #fff;
+            padding: 15px 25px; border-radius: 12px; font-family: 'Nunito', sans-serif; font-size: 1.1rem;
+            font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: center; width: 100%;
+        }
+        .btn-option:hover { background: rgba(255,255,255,0.25); border-color: var(--accent-green); transform: translateX(5px); }
+        
+        .btn-primary {
+            background: #fff; color: var(--bg-base); border: none; padding: 18px 45px;
+            border-radius: 50px; font-size: 1.2rem; font-weight: 900; text-transform: uppercase;
+            cursor: pointer; transition: 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.4); margin: 0 auto; display: inline-block;
+        }
+        .btn-primary:hover { transform: scale(1.05); background: var(--accent-green); color: #fff; }
+
+        /* ================= DRAG & DROP ================= */
+        .dd-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 10px; z-index: 70; position: relative; }
+        .dd-item { 
+            background: rgba(0,0,0,0.8); border: 2px solid var(--accent-yellow); padding: 12px 18px; 
+            border-radius: 8px; cursor: grab; font-weight: 700; user-select: none;
+        }
+        .dd-item:active { cursor: grabbing; transform: scale(1.05); }
+        /* FIX: removed position:relative overrides that broke re-dragging */
+        .dd-item.dropped { cursor: default; margin: 5px; background: rgba(0,0,0,0.5); }
+
+        .dropzone { 
+            border: 3px dashed rgba(255,255,255,0.6); border-radius: 15px; background: rgba(0,0,0,0.5); 
+            display: flex; flex-wrap: wrap; justify-content: center; align-items: center; padding: 15px; 
+            font-weight: 900; font-size: 1.2rem; transition: 0.2s; min-height: 80px; 
+            z-index: 70; position: relative;
+        }
+        .dropzone-hover { border-color: var(--accent-green); background: rgba(46, 204, 113, 0.3); }
+        /* FIX: removed pointer-events:none on dropzone children so dropped items are visible but not blocking */
+
+        /* ================= MAPA Y CHECKLIST ================= */
+        .map-img { max-height: 35vh; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); margin: 20px auto; display: block; border: 2px solid #333; z-index: 60; position: relative;}
+        
+        .chk-label { display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 12px; cursor: pointer; font-size: 1.1rem; border: 1px solid #555; margin-bottom: 8px; font-weight: 700; transition: 0.2s; z-index: 60; position: relative; }
+        .chk-label:hover { border-color: var(--accent-green); }
+        .chk-label input { transform: scale(1.5); }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); } 20%, 40%, 60%, 80% { transform: translateX(8px); } }
+        .shake { animation: shake 0.5s ease-in-out; }
+
+        /* Sub-screens dentro de game-area */
+        .sub-screen { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        .sub-screen.hidden { display: none; }
+
+        #feedback-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            padding: 40px; box-sizing: border-box; text-align: center; z-index: 1000;
+            background: var(--bg-feedback-fail); backdrop-filter: blur(12px); border: 4px solid var(--accent-yellow);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="star-3d-container">
+        <model-viewer id="jaguar-viewer" src="jaguar.glb" auto-rotate rotation-per-second="8deg" camera-controls disable-zoom interaction-prompt="none"></model-viewer>
+    </div>
+
+    <div id="game-wrapper">
+
+        <div id="pantalla-0" class="pantalla active">
+            <div class="header-ui">
+                <span class="level-badge">RENDER_FINAL PRESENTA</span>
+                <h1>El Guardián<br>de la Selva</h1>
+                <p class="bajada">Sumergite en la historia y anatomía del Rey de América. Un recorrido por 5 niveles de juego para entender por qué protegerlo es proteger nuestra identidad nacional.<br><br><span style="color: var(--accent-yellow); font-weight: 900;">¡Vos también podés ser su guardián!</span></p>
+                <button class="btn-primary" style="margin-top: 30px; position: relative; z-index: 70;" onclick="irA(1)">Comenzar</button>
+            </div>
+        </div>
+
+        <div id="pantalla-1" class="pantalla">
+            <div class="header-ui">
+                <span class="level-badge">Nivel 1</span>
+                <h2>¿Quién soy?</h2>
+            </div>
+            
+            <div class="game-area">
+                <!-- FIX: sub-screens use .sub-screen class + JS toggle instead of inline display styles -->
+                <div id="n1-q1" class="sub-screen">
+                    <p class="bajada" style="text-align: center; font-weight: 900; margin-bottom: 15px;">¿Qué significa "yaguareté" en idioma guaraní?</p>
+                    <button class="btn-option" onclick="fallo('guarani')">A) El tigre manchado</button>
+                    <button class="btn-option" onclick="mostrarSubScreen('n1-q1','n1-q2')">B) La verdadera fiera</button>
+                    <button class="btn-option" onclick="fallo('guarani')">C) El rey del monte</button>
+                    <button class="btn-option" onclick="fallo('guarani')">D) El cazador silencioso</button>
+                </div>
+                <div id="n1-q2" class="sub-screen hidden">
+                    <p class="bajada" style="text-align: center; font-weight: 900; margin-bottom: 15px;">¿Cuál es el lugar que ocupa entre los felinos más grandes del mundo?</p>
+                    <button class="btn-option" onclick="fallo('ranking')">A) Es el más grande del mundo</button>
+                    <button class="btn-option" onclick="fallo('ranking')">B) Es el segundo más grande</button>
+                    <button class="btn-option" onclick="mostrarSubScreen('n1-q2','n1-q3')">C) Es el tercero más grande</button>
+                    <button class="btn-option" onclick="fallo('ranking')">D) Es el quinto más grande</button>
+                </div>
+                <div id="n1-q3" class="sub-screen hidden">
+                    <p class="bajada" style="text-align: center; font-weight: 900; margin-bottom: 15px;">¿Cuántos yaguaretés quedan aproximadamente en Argentina hoy?</p>
+                    <button class="btn-option" onclick="fallo('poblacion')">A) Más de 1.000</button>
+                    <button class="btn-option" onclick="fallo('poblacion')">B) Alrededor de 500</button>
+                    <button class="btn-option" onclick="fallo('poblacion')">C) Unos 400</button>
+                    <button class="btn-option" onclick="irA(2)">D) Menos de 250</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="pantalla-2" class="pantalla">
+            <div class="header-ui">
+                <span class="level-badge">Nivel 2</span>
+                <h2>¿Cómo soy?</h2>
+            </div>
+            
+            <div class="game-area">
+                <div id="n2-p1" class="sub-screen">
+                    <p class="bajada" style="text-align: center;">Arrastrá las <strong>4 características correctas</strong> a la caja central.</p>
+                    <div class="dd-grid" id="n2-source">
+                        <div class="dd-item" id="c-ok1" draggable="true" ondragstart="drag(event)">Cola corta</div>
+                        <div class="dd-item" id="c-bad1" draggable="true" ondragstart="drag(event)">Orejas puntiagudas</div>
+                        <div class="dd-item" id="c-ok2" draggable="true" ondragstart="drag(event)">Mandíbula poderosa</div>
+                        <div class="dd-item" id="c-bad2" draggable="true" ondragstart="drag(event)">Patas veloces</div>
+                        <div class="dd-item" id="c-ok3" draggable="true" ondragstart="drag(event)">Manchas en rosetas</div>
+                        <div class="dd-item" id="c-ok4" draggable="true" ondragstart="drag(event)">Cuerpo robusto</div>
+                    </div>
+                    <div class="dropzone" id="dz-silueta" ondragover="permitirDrop(event)" ondrop="dropCaracteristica(event)" ondragleave="quitarHover(event)">
+                        <span id="dz-silueta-placeholder" style="opacity: 0.7; pointer-events:none;">Soltá acá las correctas</span>
+                    </div>
+                    <p id="contador-char" style="text-align: center; color: var(--accent-green); font-weight: 900; margin-top: 10px;">0 / 4 correctas</p>
+                    <button id="btn-next-n2" class="btn-primary" style="display: none; margin-top: 15px;" onclick="mostrarSubScreen('n2-p1','n2-p2')">Avanzar</button>
+                </div>
+
+                <div id="n2-p2" class="sub-screen hidden">
+                    <p class="bajada" style="text-align: center; font-weight: bold; margin-bottom: 15px;">Mini desafío de observación: ¿Cuál de estos patrones de manchas pertenece al yaguareté?</p>
+                    <button class="btn-option" onclick="fallo('manchas')">Leopardo africano (Puntos agrupados)</button>
+                    <button class="btn-option" onclick="fallo('manchas')">Guepardo (Pintas sólidas)</button>
+                    <button class="btn-option" onclick="irA(3)">Yaguareté (Rosetas con puntos adentros)</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="pantalla-3" class="pantalla">
+            <div class="header-ui">
+                <span class="level-badge">Nivel 3</span>
+                <h2>¿Qué como y dónde vivo?</h2>
+            </div>
+            
+            <div class="game-area">
+                <div id="n3-p1" class="sub-screen">
+                    <p class="bajada" style="text-align: center;">Clasificá arrastrando los animales a las canastas.</p>
+                    <div class="dd-grid" id="n3-source">
+                        <div class="dd-item" id="d-si1" draggable="true" ondragstart="drag(event)">Tapir</div>
+                        <div class="dd-item" id="d-si2" draggable="true" ondragstart="drag(event)">Carpincho</div>
+                        <div class="dd-item" id="d-si3" draggable="true" ondragstart="drag(event)">Yacaré</div>
+                        <div class="dd-item" id="d-no1" draggable="true" ondragstart="drag(event)">Cóndor andino</div>
+                        <div class="dd-item" id="d-no2" draggable="true" ondragstart="drag(event)">Delfín de río</div>
+                        <div class="dd-item" id="d-si4" draggable="true" ondragstart="drag(event)">Tortuga</div>
+                        <div class="dd-item" id="d-si5" draggable="true" ondragstart="drag(event)">Venado</div>
+                        <div class="dd-item" id="d-si6" draggable="true" ondragstart="drag(event)">Paca</div>
+                    </div>
+                    <div style="display: flex; gap: 15px; position: relative; z-index: 70;">
+                        <div class="dropzone" id="dz-si" style="flex: 1; border-color: var(--accent-green);" ondragover="permitirDrop(event)" ondrop="dropDieta(event, 'si')" ondragleave="quitarHover(event)">SÍ COME</div>
+                        <div class="dropzone" id="dz-no" style="flex: 1; border-color: #e74c3c;" ondragover="permitirDrop(event)" ondrop="dropDieta(event, 'no')" ondragleave="quitarHover(event)">NO COME</div>
+                    </div>
+                    <button id="btn-next-n3" class="btn-primary" style="display: none; margin-top: 15px;" onclick="mostrarSubScreen('n3-p1','n3-p2')">Avanzar</button>
+                </div>
+
+                <div id="n3-p2" class="sub-screen hidden">
+                    <p class="bajada" style="text-align: center; margin-bottom: 15px;">¿En cuáles de estas regiones de Argentina puede encontrarse hoy?</p>
+                    <img src="imagen_2026-04-01_101609836.png" class="map-img" alt="Mapa Argentina">
+                    <button class="btn-option" onclick="fallo('mapa')">A) Patagonia, Cuyo y Buenos Aires</button>
+                    <button class="btn-option" onclick="irA(4)">B) Misiones, Yungas de Salta/Jujuy y Chaco/Formosa</button>
+                    <button class="btn-option" onclick="fallo('mapa')">C) Todo el centro del país</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="pantalla-4" class="pantalla">
+            <div class="header-ui">
+                <span class="level-badge">Nivel 4</span>
+                <h2>¿Cómo me reproduzco?</h2>
+            </div>
+            
+            <div class="game-area">
+                <div id="n4-p1" class="sub-screen">
+                    <p class="bajada" style="text-align: center;">Ordená el ciclo de vida. Arrastrá la frase al paso numérico correspondiente.</p>
+                    <div class="dd-grid" id="n4-source">
+                        <div class="dd-item" id="r-step1" draggable="true" ondragstart="drag(event)">Se separan tras cúpula</div>
+                        <div class="dd-item" id="r-step2" draggable="true" ondragstart="drag(event)">Gestación: 91 a 101 días</div>
+                        <div class="dd-item" id="r-step3" draggable="true" ondragstart="drag(event)">Nacen cachorros ciegos</div>
+                        <div class="dd-item" id="r-step4" draggable="true" ondragstart="drag(event)">Leche solo 11 semanas</div>
+                        <div class="dd-item" id="r-step5" draggable="true" ondragstart="drag(event)">Independencia 18-24 meses</div>
+                    </div>
+                    <div style="display: flex; gap: 5px; width: 100%; margin-top: 10px; position: relative; z-index: 70;">
+                        <div class="dropzone" id="dz-r1" style="flex:1; padding: 5px;" ondragover="permitirDropTime(event, 1)" ondrop="dropTime(event, 'r-step1', 1)" ondragleave="quitarHover(event)">1</div>
+                        <div class="dropzone" id="dz-r2" style="flex:1; padding: 5px;" ondragover="permitirDropTime(event, 2)" ondrop="dropTime(event, 'r-step2', 2)" ondragleave="quitarHover(event)">2</div>
+                        <div class="dropzone" id="dz-r3" style="flex:1; padding: 5px;" ondragover="permitirDropTime(event, 3)" ondrop="dropTime(event, 'r-step3', 3)" ondragleave="quitarHover(event)">3</div>
+                        <div class="dropzone" id="dz-r4" style="flex:1; padding: 5px;" ondragover="permitirDropTime(event, 4)" ondrop="dropTime(event, 'r-step4', 4)" ondragleave="quitarHover(event)">4</div>
+                        <div class="dropzone" id="dz-r5" style="flex:1; padding: 5px;" ondragover="permitirDropTime(event, 5)" ondrop="dropTime(event, 'r-step5', 5)" ondragleave="quitarHover(event)">5</div>
+                    </div>
+                    <button id="btn-next-n4" class="btn-primary" style="display: none; margin-top: 15px;" onclick="mostrarSubScreen('n4-p1','n4-p2')">Avanzar</button>
+                </div>
+
+                <div id="n4-p2" class="sub-screen hidden">
+                    <p class="bajada" style="text-align: center; font-weight: bold; margin-bottom: 15px;">¿A qué edad alcanzan la madurez sexual las hembras?</p>
+                    <button class="btn-option" onclick="fallo('edad')">A) Al año de vida</button>
+                    <button class="btn-option" onclick="irA(5)">B) Entre los 2 y 3 años</button>
+                    <button class="btn-option" onclick="fallo('edad')">C) Entre los 4 y 5 años</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="pantalla-5" class="pantalla">
+            <div class="header-ui">
+                <span class="level-badge">Nivel 5</span>
+                <h2>¿Por qué estoy en peligro?</h2>
+            </div>
+            
+            <div class="game-area">
+                <p class="bajada" style="text-align: center; margin-bottom: 15px;">Tildá <strong>todas</strong> las amenazas reales y apretá Validar.</p>
+                <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 15px; text-align: left;">
+                    <label class="chk-label"><input type="checkbox" class="chk-amenaza" value="ok"> Deforestación y pérdida de hábitat</label>
+                    <label class="chk-label"><input type="checkbox" class="chk-amenaza" value="ok"> Caza furtiva</label>
+                    <label class="chk-label"><input type="checkbox" class="chk-amenaza" value="bad"> Migración natural hacia zonas frías</label>
+                    <label class="chk-label"><input type="checkbox" class="chk-amenaza" value="ok"> Atropellamiento en rutas</label>
+                    <label class="chk-label"><input type="checkbox" class="chk-amenaza" value="ok"> Escasez de presas por desequilibrio ecológico</label>
+                    <label class="chk-label"><input type="checkbox" class="chk-amenaza" value="bad"> Enfermedades propias de la especie</label>
+                    <label class="chk-label"><input type="checkbox" class="chk-amenaza" value="ok"> Conflicto con productores ganaderos</label>
+                </div>
+                <button class="btn-primary" style="margin-top: 15px; position: relative; z-index: 70;" onclick="validarAmenazas()">Validar Amenazas</button>
+            </div>
+        </div>
+
+        <div id="pantalla-6" class="pantalla" style="background: rgba(0,0,0,0.85);">
+            <div class="header-ui" style="background: none; padding-bottom: 0;">
+                <span class="level-badge" style="color: var(--accent-green);">DESAFÍO FINAL</span>
+                <h2>¡SOS GUARDIÁN!</h2>
+                <p class="bajada">Respondé estas 5 preguntas rápidas antes de que el tiempo llegue a cero.</p>
+                <h1 id="timer" style="font-size: 5rem; margin: 10px 0; color: var(--accent-yellow);">60</h1>
+            </div>
+            
+            <!-- FIX: pointer-events:auto agregado explícitamente al quiz-box -->
+            <div class="game-area" id="quiz-box" style="text-align: center; pointer-events: auto;">
+                <p id="q-text" style="font-size: 1.4rem; font-weight: 900; margin-bottom: 20px;"></p>
+                <!-- FIX: botones usan índice explícito de opción (0 o 1), no hardcoded true/false -->
+                <button class="btn-option" id="btn-a" onclick="checkQuiz(0)"></button>
+                <button class="btn-option" id="btn-b" onclick="checkQuiz(1)"></button>
+            </div>
+        </div>
+
+        <div id="pantalla-7" class="pantalla" style="background: linear-gradient(rgba(30,55,24,0.7), #000);">
+            <div class="header-ui" style="background: none; margin: auto; max-width: 900px;">
+                <h1 style="color: var(--accent-green);">¡Misión Cumplida!</h1>
+                <p class="bajada" style="font-size: 1.3rem; opacity: 1; color: #fff; margin-top: 25px;">La extinción no es un accidente, es una decisión. Hoy nos quedan menos de 250 yaguaretés en Argentina. Proteger la selva donde viven no es solo salvar a un animal, es defender el equilibrio de la tierra que habitamos y nuestra propia identidad.</p>
+                <p class="bajada" style="font-size: 1.3rem; opacity: 1; color: #fff;">La supervivencia del mayor felino de América depende de que dejemos de mirar para otro lado.</p>
+                <p style="color: var(--accent-yellow); font-weight: 900; font-size: 1.8rem; margin-top: 30px; text-transform: uppercase;">Vos sos parte de la solución.</p>
+                <button class="btn-primary" style="margin-top: 20px;" onclick="location.reload()">Volver al Inicio</button>
+            </div>
+        </div>
+
+        <!-- Modal feedback -->
+        <div id="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 8000; display: none; pointer-events: auto;"></div>
+        <div id="feedback-panel" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 600px; padding: 40px; border-radius: 20px; z-index: 9000; display: none; text-align: center; border: 3px solid var(--accent-yellow); background: var(--bg-feedback-fail); box-shadow: 0 20px 50px rgba(0,0,0,0.9); pointer-events: auto;">
+            <h2 style="color: var(--accent-yellow); font-size: 2.2rem; margin: 0 0 15px 0; text-transform: uppercase; letter-spacing: 2px;">DATO REAL</h2>
+            <p id="feedback-text" style="font-size: 1.3rem; line-height: 1.6; margin-bottom: 30px; color: #fff;">...</p>
+            <button class="btn-primary" style="font-size: 1rem; padding: 12px 30px;" onclick="cerrarFeedback()">Entendido, Reintentar</button>
+        </div>
+    </div>
+
+    <script>
+        const datosReales = {
+            'guarani': "¡No te rindas! La palabra yaguareté viene del guaraní y significa literalmente <strong>'la verdadera fiera'</strong>. Era considerado un animal sagrado por los pueblos originarios.",
+            'ranking': "El yaguareté es el felino más grande de América Latina y el <strong>tercero a nivel mundial</strong>, superado solo por el tigre de bengala y el león.",
+            'poblacion': "La situación es crítica: en Argentina quedan <strong>menos de 250 yaguaretés</strong>. Su distribución se redujo un 95% en los últimos dos siglos.",
+            'caracteristicas': "¡Cuidado! El yaguareté tiene orejas redondeadas, patas grandes y cuerpo robusto para cazar usando la <strong>fuerza, no la velocidad</strong>.",
+            'manchas': "Las manchas del yaguareté son rosetas (círculos con puntos en el centro), más grandes y complejas que las del leopardo. Cada patrón es único, igual que nuestras huellas dactilares.",
+            'dieta': "El yaguareté consume grandes vertebrados como tapir y carpincho, pero también presas menores como tortugas y yacarés. <strong>NO come cóndores ni delfines.</strong>",
+            'mapa': "Hoy el yaguareté en Argentina sobrevive principalmente en el corredor verde de <strong>Misiones, las yungas de Salta y Jujuy, y el Chaco/Formosa</strong>.",
+            'tiempo': "Es un animal solitario: la pareja se separa tras la cúpula. Los cachorros nacen ciegos, toman leche 11 semanas y se independizan a los 18-24 meses.",
+            'edad': "Las hembras alcanzan la madurez sexual entre los <strong>2 y 3 años</strong>. Esto hace que la recuperación de la población sea muy lenta.",
+            'amenazas': "Las principales amenazas son reales y causadas por el humano: <strong>la deforestación, la caza furtiva, el atropellamiento en rutas y la escasez de presas</strong>."
+        };
+
+        // ================= NAVEGACIÓN =================
+        function irA(num) {
+            document.querySelectorAll('.pantalla').forEach(p => {
+                p.style.display = 'none';
+                p.classList.remove('active');
+            });
+            const destino = document.getElementById('pantalla-' + num);
+            destino.style.display = 'flex';
+            destino.classList.add('active');
+
+            // FIX: mostrar la primera sub-screen al entrar a una pantalla
+            const subScreens = destino.querySelectorAll('.sub-screen');
+            subScreens.forEach((ss, i) => {
+                if (i === 0) {
+                    ss.classList.remove('hidden');
+                    ss.style.display = 'flex';
+                } else {
+                    ss.classList.add('hidden');
+                    ss.style.display = 'none';
+                }
+            });
+
+            if (num === 6) iniciarQuiz();
+        }
+
+        // FIX: función unificada para avanzar entre sub-screens dentro de una pantalla
+        function mostrarSubScreen(idActual, idSiguiente) {
+            const actual = document.getElementById(idActual);
+            const siguiente = document.getElementById(idSiguiente);
+            actual.classList.add('hidden');
+            actual.style.display = 'none';
+            siguiente.classList.remove('hidden');
+            siguiente.style.display = 'flex';
+        }
+
+        function fallo(id) {
+            document.getElementById('feedback-text').innerHTML = datosReales[id];
+            document.getElementById('modal-overlay').style.display = 'block';
+            document.getElementById('feedback-panel').style.display = 'block';
+        }
+
+        function cerrarFeedback() {
+            document.getElementById('modal-overlay').style.display = 'none';
+            document.getElementById('feedback-panel').style.display = 'none';
+        }
+
+        // ================= DRAG & DROP =================
+        function drag(ev) {
+            ev.dataTransfer.setData("id", ev.target.id);
+        }
+
+        function permitirDrop(ev) {
+            ev.preventDefault();
+            // FIX: aplicar hover solo al dropzone, no a sus hijos
+            const dz = ev.currentTarget;
+            dz.classList.add('dropzone-hover');
+        }
+
+        function quitarHover(ev) {
+            ev.currentTarget.classList.remove('dropzone-hover');
+        }
+
+        // ================= NIVEL 2 =================
+        let charsCorrectos = 0;
+
+        function dropCaracteristica(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('dropzone-hover');
+            const id = ev.dataTransfer.getData("id");
+            if (!id) return;
+            const elemento = document.getElementById(id);
+
+            if (id.includes('ok')) {
+                elemento.classList.add('dropped');
+                elemento.setAttribute('draggable', 'false'); // FIX: evitar re-drag de elementos ya colocados
+                ev.currentTarget.appendChild(elemento);
+                // FIX: ocultar placeholder cuando hay items
+                document.getElementById('dz-silueta-placeholder').style.display = 'none';
+                charsCorrectos++;
+                document.getElementById('contador-char').innerText = charsCorrectos + " / 4 correctas";
+                if (charsCorrectos === 4) {
+                    document.getElementById('btn-next-n2').style.display = 'inline-block';
+                }
+            } else {
+                fallo('caracteristicas');
+            }
+        }
+
+        // ================= NIVEL 3 =================
+        let dietaCorrectos = 0;
+
+        function dropDieta(ev, zona) {
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('dropzone-hover');
+            const id = ev.dataTransfer.getData("id");
+            if (!id) return;
+            const elemento = document.getElementById(id);
+
+            if ((zona === 'si' && id.includes('si')) || (zona === 'no' && id.includes('no'))) {
+                elemento.classList.add('dropped');
+                elemento.setAttribute('draggable', 'false'); // FIX: evitar re-drag
+                ev.currentTarget.appendChild(elemento);
+                dietaCorrectos++;
+                if (dietaCorrectos === 8) {
+                    document.getElementById('btn-next-n3').style.display = 'inline-block';
+                }
+            } else {
+                fallo('dieta');
+            }
+        }
+
+        // ================= NIVEL 4 =================
+        let reproPaso = 1;
+
+        function permitirDropTime(ev, numeroCaja) {
+            ev.preventDefault();
+            if (numeroCaja === reproPaso) {
+                ev.currentTarget.classList.add('dropzone-hover');
+            }
+        }
+
+        function dropTime(ev, idEsperado, numeroCaja) {
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('dropzone-hover');
+            const id = ev.dataTransfer.getData("id");
+            if (!id) return;
+            const elemento = document.getElementById(id);
+
+            if (id === idEsperado && numeroCaja === reproPaso) {
+                elemento.classList.add('dropped');
+                elemento.setAttribute('draggable', 'false'); // FIX: evitar re-drag
+                const dz = ev.currentTarget;
+                dz.innerHTML = '';
+                dz.appendChild(elemento);
+                dz.style.borderColor = "var(--accent-green)";
+                reproPaso++;
+                if (reproPaso > 5) {
+                    document.getElementById('btn-next-n4').style.display = 'inline-block';
+                }
+            } else {
+                fallo('tiempo');
+            }
+        }
+
+        // ================= NIVEL 5 =================
+        function validarAmenazas() {
+            const checks = document.querySelectorAll('.chk-amenaza');
+            let malMarcadas = false;
+            let correctasMarcadas = 0;
+
+            checks.forEach(c => {
+                if (c.checked && c.value === 'bad') malMarcadas = true;
+                if (c.checked && c.value === 'ok') correctasMarcadas++;
+                if (!c.checked && c.value === 'ok') malMarcadas = true;
+            });
+
+            if (malMarcadas || correctasMarcadas === 0) {
+                fallo('amenazas');
+            } else {
+                irA(6);
+            }
+        }
+
+        // ================= QUIZ FINAL =================
+        let tiempoRestante = 60;
+        let qIndex = 0;
+        let intervaloTimer = null;
+
+        // FIX: estructura con opción correcta como índice (0=A, 1=B) en lugar de true/false hardcodeado en botones
+        const triviaFinal = [
+            { q: "¿Cuántos km puede caminar por día?",             a: "10 a 15 km",           b: "2 a 5 km",          corr: 0 },
+            { q: "¿El yaguareté sabe nadar?",                      a: "No, lo evita",          b: "Sí, es un excelente nadador", corr: 1 },
+            { q: "¿Cuántos felinos silvestres viven en Argentina?", a: "10 especies",           b: "5 especies",         corr: 0 },
+            { q: "¿Cuál es su nombre científico?",                  a: "Panthera leo",          b: "Panthera onca",      corr: 1 },
+            { q: "¿En qué estado de conservación está en Argentina?",a: "Peligro Crítico (CR)", b: "Vulnerable",         corr: 0 }
+        ];
+
+        function iniciarQuiz() {
+            // FIX: limpiar timer previo si se reinicia el quiz
+            if (intervaloTimer) clearInterval(intervaloTimer);
+            tiempoRestante = 60;
+            qIndex = 0;
+            document.getElementById('timer').innerText = tiempoRestante;
+
+            intervaloTimer = setInterval(() => {
+                tiempoRestante--;
+                document.getElementById('timer').innerText = tiempoRestante;
+                if (tiempoRestante <= 0) {
+                    clearInterval(intervaloTimer);
+                    intervaloTimer = null;
+                    alert("¡Se acabó el tiempo! Volvé a intentarlo.");
+                    location.reload();
+                }
+            }, 1000);
+
+            cargarPreguntaQuiz();
+        }
+
+        function cargarPreguntaQuiz() {
+            const q = triviaFinal[qIndex];
+            document.getElementById('q-text').innerText = q.q;
+            document.getElementById('btn-a').innerText = "A) " + q.a;
+            document.getElementById('btn-b').innerText = "B) " + q.b;
+        }
+
+        // FIX: checkQuiz recibe el índice de la opción elegida (0=A, 1=B) y compara con corr
+        function checkQuiz(opcionElegida) {
+            const q = triviaFinal[qIndex];
+            if (opcionElegida === q.corr) {
+                qIndex++;
+                if (qIndex < triviaFinal.length) {
+                    cargarPreguntaQuiz();
+                } else {
+                    clearInterval(intervaloTimer);
+                    intervaloTimer = null;
+                    irA(7); // ¡GANA!
+                }
+            } else {
+                // Vibrar y penalizar 5 segundos
+                const gameWrapper = document.getElementById('game-wrapper');
+                gameWrapper.classList.add('shake');
+                if ('vibrate' in navigator) navigator.vibrate(300);
+                setTimeout(() => gameWrapper.classList.remove('shake'), 500);
+
+                tiempoRestante = Math.max(0, tiempoRestante - 5);
+                document.getElementById('timer').style.color = "#e74c3c";
+                setTimeout(() => document.getElementById('timer').style.color = "var(--accent-yellow)", 400);
+            }
+        }
+
+        // ================= INIT =================
+        // Mostrar la primera sub-screen de la pantalla inicial al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            const primeraActiva = document.querySelector('.pantalla.active');
+            if (primeraActiva) {
+                const subs = primeraActiva.querySelectorAll('.sub-screen');
+                subs.forEach((ss, i) => {
+                    ss.style.display = i === 0 ? 'flex' : 'none';
+                    if (i !== 0) ss.classList.add('hidden');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

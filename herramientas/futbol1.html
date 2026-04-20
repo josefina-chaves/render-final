@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Lotería del Código Postal | RENDER_FINAL</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- ESTILOS BASE RENDER_FINAL (B&W ESTRICTO) --- */
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --accent: #000000; 
+            --alarm: #000000;
+            --terminal: #000000;
+        }
+
+        ::selection { background: #000; color: #fff; }
+
+        body {
+            background-color: var(--bg); color: var(--text);
+            font-family: 'Space Mono', monospace; margin: 0; padding: 0;
+            line-height: 1.6; overflow-x: hidden;
+        }
+
+        /* --- MARQUESINA Y HEADER --- */
+        .marquee-container {
+            background: var(--text); color: var(--bg); overflow: hidden; white-space: nowrap;
+            padding: 8px 0; font-size: 0.8rem; text-transform: uppercase; border-bottom: 2px solid var(--accent);
+        }
+        .marquee-content { display: inline-block; animation: marquee 60s linear infinite; }
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-50%, 0); } }
+
+        .site-header {
+            padding: 1rem 5%; border-bottom: 2px solid var(--text); 
+            background: rgba(255,255,255,0.98); z-index: 100; position: sticky; top: 0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.8rem; letter-spacing: -1px; text-decoration: none; color: var(--text); }
+        .blink { animation: blinker 1s linear infinite; color: var(--accent); }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        /* --- FORMATO DE ARTÍCULO --- */
+        .article-container { max-width: 720px; margin: 0 auto; padding: 60px 20px 100px 20px; }
+        .article-header { display: block; text-align: left; margin-bottom: 50px; border-bottom: 4px solid #000; padding-bottom: 40px; position: relative; }
+        .article-title { font-family: 'Archivo', sans-serif; font-size: clamp(3rem, 6vw, 4.5rem); line-height: 0.95; margin: 0 0 25px 0; color: #000; text-transform: uppercase; letter-spacing: -1px;}
+        .article-bajada { font-size: 1.3rem; color: #333; line-height: 1.4; margin-bottom: 30px; font-weight: 400; font-family: 'Space Mono', monospace; }
+        .article-meta { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 1px; display: block; border-top: 1px solid #ddd; padding-top: 15px; }
+        
+        .article-body { font-family: 'Arial', sans-serif; font-size: 1.15rem; line-height: 1.8; color: #111; }
+        .article-body p { margin-bottom: 1.8rem; }
+        .article-body h3 { font-family: 'Archivo', sans-serif; font-size: 1.8rem; text-transform: uppercase; margin: 3rem 0 1.5rem 0; line-height: 1.2; border-bottom: 2px solid #000; display: inline-block; padding-bottom: 5px; }
+
+        /* --- ANIMACIÓN: CORREDOR, PELOTA Y EXPLOSIÓN --- */
+        .anim-scene {
+            width: 100%;
+            height: 150px;
+            margin: 60px 0;
+            position: relative;
+            /* Sin caja, solo la línea inferior simulando el suelo */
+            border-bottom: 3px solid #000; 
+        }
+
+        /* EL CORREDOR (Stick Figure CSS) */
+        .runner {
+            position: absolute;
+            bottom: 0; 
+            right: -50px; /* Arranca fuera de cámara a la derecha */
+            width: 30px; 
+            height: 60px;
+            z-index: 10;
+            animation: moveAcross 4s infinite linear;
+        }
+
+        /* Partes del cuerpo del corredor */
+        .head { width: 14px; height: 14px; border: 2px solid #000; border-radius: 50%; position: absolute; top: 0; left: 8px; background: #fff; }
+        .torso { width: 3px; height: 20px; background: #000; position: absolute; top: 16px; left: 14px; }
+        
+        /* Brazos y piernas */
+        .limb { width: 3px; height: 18px; background: #000; position: absolute; transform-origin: top center; }
+        
+        .arm { top: 18px; left: 14px; height: 16px; }
+        .arm-left { animation: swingLeft 0.3s infinite alternate linear; }
+        .arm-right { animation: swingRight 0.3s infinite alternate linear; }
+        
+        .leg { top: 35px; left: 14px; }
+        .leg-left { animation: swingRight 0.3s infinite alternate linear; } /* Pierna opuesta al brazo */
+        .leg-right { animation: swingLeft 0.3s infinite alternate linear; }
+
+        @keyframes swingLeft { 0% { transform: rotate(-45deg); } 100% { transform: rotate(45deg); } }
+        @keyframes swingRight { 0% { transform: rotate(45deg); } 100% { transform: rotate(-45deg); } }
+
+        /* Movimiento general de derecha a izquierda */
+        @keyframes moveAcross {
+            0% { right: -50px; }
+            45% { right: 55%; } /* Punto de impacto con la pelota */
+            100% { right: calc(100% + 50px); }
+        }
+
+        /* LA PELOTA */
+        .ball {
+            position: absolute;
+            bottom: 0;
+            right: 58%; /* Espera en este punto */
+            width: 16px; 
+            height: 16px;
+            border: 2px solid #000; 
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff 0%, #fff 40%, #000 45%, #fff 50%);
+            z-index: 5;
+            animation: flyAndExplode 4s infinite linear;
+        }
+
+        @keyframes flyAndExplode {
+            0%, 44% { right: 58%; bottom: 0; opacity: 1; transform: rotate(0deg) scale(1); }
+            45% { right: 60%; bottom: 20px; opacity: 1; transform: rotate(-90deg) scale(1.2); } /* Impacto */
+            47% { right: 68%; bottom: 60px; opacity: 0; transform: rotate(-360deg) scale(0); } /* Desaparece */
+            100% { right: 68%; bottom: 60px; opacity: 0; }
+        }
+
+        /* LA MANCHA DE BILLETES */
+        .explosion-center {
+            position: absolute;
+            bottom: 60px;
+            right: 68%;
+            width: 0; height: 0;
+            z-index: 9999; /* Para que la mancha invada todo */
+        }
+
+        .bill {
+            position: absolute;
+            width: 60px; height: 30px;
+            border: 3px solid #000;
+            background: #fff;
+            color: #000;
+            font-family: 'Space Mono', monospace;
+            font-weight: 800;
+            font-size: 14px;
+            line-height: 24px;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .bill::before { content: "$"; font-size: 10px; position: absolute; left: 4px; }
+        .bill::after { content: "$"; font-size: 10px; position: absolute; right: 4px; }
+
+        /* Animaciones para que los billetes salgan disparados en todas direcciones manchando la pantalla */
+        .b1 { animation: boom1 4s infinite ease-out; }
+        .b2 { animation: boom2 4s infinite ease-out; }
+        .b3 { animation: boom3 4s infinite ease-out; }
+        .b4 { animation: boom4 4s infinite ease-out; }
+        .b5 { animation: boom5 4s infinite ease-out; }
+        .b6 { animation: boom6 4s infinite ease-out; }
+
+        @keyframes boom1 { 0%, 46% { opacity: 0; transform: translate(0,0) scale(0.1) rotate(0); } 48% { opacity: 1; } 80%, 100% { opacity: 0; transform: translate(-30vw, -40vh) scale(6) rotate(-45deg); } }
+        @keyframes boom2 { 0%, 46% { opacity: 0; transform: translate(0,0) scale(0.1) rotate(0); } 48% { opacity: 1; } 80%, 100% { opacity: 0; transform: translate(20vw, -50vh) scale(8) rotate(70deg); } }
+        @keyframes boom3 { 0%, 46% { opacity: 0; transform: translate(0,0) scale(0.1) rotate(0); } 48% { opacity: 1; } 80%, 100% { opacity: 0; transform: translate(-40vw, 10vh) scale(5) rotate(-120deg); } }
+        @keyframes boom4 { 0%, 46% { opacity: 0; transform: translate(0,0) scale(0.1) rotate(0); } 48% { opacity: 1; } 80%, 100% { opacity: 0; transform: translate(40vw, 20vh) scale(9) rotate(30deg); } }
+        @keyframes boom5 { 0%, 46% { opacity: 0; transform: translate(0,0) scale(0.1) rotate(0); } 48% { opacity: 1; } 80%, 100% { opacity: 0; transform: translate(0, -60vh) scale(12) rotate(180deg); } }
+        @keyframes boom6 { 0%, 46% { opacity: 0; transform: translate(0,0) scale(0.1) rotate(0); } 48% { opacity: 1; } 80%, 100% { opacity: 0; transform: translate(10vw, 40vh) scale(7) rotate(-90deg); } }
+
+        footer { margin-top: 60px; padding: 30px 5%; border-top: 2px solid var(--text); display: flex; justify-content: space-between; font-size: 0.75rem; background: #fff; }
+        @media (max-width: 600px) { footer { flex-direction: column; gap: 10px; text-align: center; } }
+    </style>
+</head>
+<body>
+
+    <div class="marquee-container">
+        <div class="marquee-content">
+            RENDER_FINAL_ [v.2.0.26] /// PERIODISMO DE DATOS Y NARRATIVAS VISUALES /// LA VERDAD ESTÁ EN EL ARCHIVO /// PROCESANDO SEÑAL /// RENDER_FINAL_ [v.2.0.26] /// PERIODISMO DE DATOS Y NARRATIVAS VISUALES /// LA VERDAD ESTÁ EN EL ARCHIVO /// PROCESANDO SEÑAL /// 
+        </div>
+    </div>
+    
+    <header class="site-header">
+        <a href="#" class="logo">RENDER_FINAL<span class="blink">_</span></a>
+    </header>
+
+    <main class="article-container">
+        
+        <header class="article-header">
+            <h1 class="article-title">Lorem Ipsum Dolor Sit Amet</h1>
+            <p class="article-bajada">Consectetur adipiscing elit. Mauris vulputate elementum justo, at aliquet quam. Cras vitae enim id nulla condimentum congue id vel orci.</p>
+            <span class="article-meta">:: DATOS | POR REDACCIÓN RENDER | 11.03.26</span>
+        </header>
+
+        <div class="article-body">
+            
+            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam id interdum nisl. In quis risus felis. Vivamus et risus sed ligula tincidunt tempus. Proin at risus accumsan, elementum diam a, commodo libero. Suspendisse sagittis tristique lectus nec consequat. Donec pellentesque elementum elit, eu mattis magna egestas a.</p>
+
+            <p>Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Phasellus tincidunt nulla ac diam cursus, non sollicitudin neque dictum. Sed aliquet metus quis eros efficitur, ut pharetra risus venenatis.</p>
+
+            <div class="anim-scene">
+                <div class="runner">
+                    <div class="head"></div>
+                    <div class="torso"></div>
+                    <div class="limb arm arm-left"></div>
+                    <div class="limb arm arm-right"></div>
+                    <div class="limb leg leg-left"></div>
+                    <div class="limb leg leg-right"></div>
+                </div>
+
+                <div class="ball"></div>
+
+                <div class="explosion-center">
+                    <div class="bill b1">100</div>
+                    <div class="bill b2">100</div>
+                    <div class="bill b3">100</div>
+                    <div class="bill b4">100</div>
+                    <div class="bill b5">100</div>
+                    <div class="bill b6">100</div>
+                </div>
+            </div>
+
+            <h3>Nullam auctor consequat</h3>
+            
+            <p>Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Maecenas placerat ex quis massa tincidunt, ut convallis lacus fermentum. Morbi vulputate eros a tortor semper, in semper justo pulvinar. Nunc sed felis at ex commodo gravida nec et nunc.</p>
+
+            <p>Duis sed sapien at tortor sagittis vulputate sed ut eros. Etiam a justo velit. Proin facilisis ligula et augue cursus, in feugiat eros interdum. Aenean in velit nec lectus vehicula vestibulum quis eu sem. Nulla facilisi.</p>
+
+        </div>
+    </main>
+
+    <footer>
+        <div><strong>CONTACTO:</strong> editorial@renderfinal.com</div>
+        <div>&copy; 2026 RENDER_FINAL. Todos los derechos reservados.</div>
+    </footer>
+
+</body>
+</html>

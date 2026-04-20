@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Línea de Producción | RENDER_FINAL</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+
+    <style>
+        /* --- ESTÉTICA RENDER FINAL --- */
+        :root {
+            --bg: #ffffff;
+            --text: #000000;
+            --accent: #0000FF; 
+            --alarm: #ff0000;
+            /* Variables para escalado responsivo de las cajas */
+            --box-size: 220px;
+            --box-half: 110px;
+            --belt-height: 260px;
+        }
+
+        body {
+            font-family: 'Space Mono', monospace;
+            background-color: var(--bg); color: var(--text);
+            overflow-x: hidden; overflow-y: auto; margin: 0; padding: 0; box-sizing: border-box;
+        }
+
+        .blink { animation: blinker 1s linear infinite; color: var(--accent); }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        /* --- 1. LA FÁBRICA (A 100VH) --- */
+        .industrial-section {
+            width: 100vw; height: 100vh; position: relative; background-color: #f9f9f9;
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px; border-bottom: 5px solid #000;
+            overflow: hidden; /* Evita desbordes extraños en móviles */
+        }
+
+        .main-hero-title {
+            position: absolute; top: 5%; left: 0; width: 100%; text-align: center; z-index: 5;
+            font-family: 'Archivo', sans-serif; font-size: clamp(2rem, 5vw, 5rem); 
+            color: #000; text-transform: uppercase; line-height: 0.9; letter-spacing: -2px;
+            pointer-events: none; text-shadow: 2px 2px 0 #fff; 
+            padding: 0 15px; box-sizing: border-box;
+        }
+
+        .start-hint {
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            font-family: 'Space Mono', monospace; font-size: clamp(0.8rem, 3vw, 1.2rem); font-weight: bold;
+            color: var(--accent); z-index: 15; text-transform: uppercase;
+            animation: hintblink 1.5s infinite; transition: opacity 0.5s ease;
+            pointer-events: none; background: rgba(255,255,255,0.9); 
+            padding: 5px 15px; border: 2px dashed var(--accent); text-align: center;
+        }
+        @keyframes hintblink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* --- 2. LA CINTA TRANSPORTADORA --- */
+        .factory-belt-wrapper {
+            width: 100vw; height: 100vh; display: flex; align-items: center;
+            overflow-x: auto; overflow-y: hidden; position: absolute; top: 0; left: 0;
+            scroll-behavior: auto; /* Controlado por JS */
+        }
+        .factory-belt-wrapper::-webkit-scrollbar { display: none; } 
+
+        @keyframes rodillos { from { background-position: 0px 0; } to { background-position: -20px 0; } }
+
+        .caja-container {
+            display: flex; gap: clamp(150px, 25vw, 350px); align-items: center; height: var(--belt-height); z-index: 10;
+            background-color: #fff; 
+            background-image: repeating-linear-gradient(90deg, #fff, #fff 18px, #333 18px, #333 20px);
+            border-top: 5px solid #000; border-bottom: 8px solid #000;
+            box-shadow: inset 0 15px 15px rgba(0,0,0,0.05), 0 20px 0px rgba(0,0,0,0.05);
+            padding: 0 calc(50vw - var(--box-half)) 0 100vw; 
+            width: max-content; 
+            animation: rodillos 0.8s linear infinite; 
+        }
+
+        .status-panel {
+            position: absolute; top: 20px; left: 20px; z-index: 20;
+            background: #fff; border: 3px solid #000; padding: 8px 12px;
+            display: flex; gap: 15px; box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+            transition: opacity 0.5s ease;
+        }
+        .light-group { display: flex; align-items: center; gap: 6px; font-weight: bold; font-size: 0.7rem; }
+        .light { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #000; background: #333; transition: background 0.2s;}
+        .light.red.active { background: var(--alarm); box-shadow: 0 0 10px var(--alarm); }
+        .light.green.active { background: #00ff00; box-shadow: 0 0 10px #00ff00; }
+
+        /* --- 3. CAJAS DE CARTÓN --- */
+        .caja {
+            width: var(--box-size); height: calc(var(--box-size) * 0.9); background-color: #ccc; 
+            border: 4px solid #000; flex-shrink: 0; display: flex; 
+            flex-direction: column; justify-content: center; align-items: center;
+            cursor: pointer; position: relative; perspective: 800px;
+            box-shadow: 6px 6px 0 rgba(0, 0, 255, 0.25); 
+            transition: transform 0.2s;
+        }
+        .caja:hover { transform: translateY(-5px); }
+
+        .flap {
+            position: absolute; left: -4px; width: calc(100% + 8px); height: 50%;
+            background: #fff; border: 4px solid #000; box-sizing: border-box;
+            transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 5;
+        }
+        .flap.top { top: -4px; transform-origin: top; border-bottom: 2px solid #000; }
+        .flap.bottom { bottom: -4px; transform-origin: bottom; border-top: 2px solid #000;}
+
+        .caja.abierta .flap.top { transform: rotateX(160deg); }
+        .caja.abierta .flap.bottom { transform: rotateX(-160deg); }
+
+        /* --- 4. LA ETIQUETA --- */
+        .caja-logo { 
+            position: absolute; z-index: 10; background: #fff; 
+            border: 3px solid var(--accent); 
+            padding: 10px; text-align: center; width: 85%; 
+            box-shadow: 4px 4px 0 var(--accent); 
+            opacity: 0; transform: scale(1.5) translateY(-50px) rotate(10deg);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none;
+        }
+        .caja-logo h4 { font-family: 'Archivo', sans-serif; font-size: clamp(1rem, 4vw, 1.4rem); text-transform: uppercase; margin: 0; line-height: 1; color: var(--accent); }
+        .caja-logo small { display: block; font-size: 0.65rem; margin-top: 5px; color: #000; font-weight: bold;}
+        
+        .caja.stamped .caja-logo { opacity: 1; transform: scale(1) translateY(0) rotate(0deg); }
+        .caja.abierta .caja-logo { opacity: 0; transition: opacity 0.2s; }
+        
+        .caja.destruida.stamped::after { content: 'CLAUSURADO'; }
+        .caja.apagada.stamped::after { content: 'HORNOS APAGADOS'; }
+        
+        .caja.destruida.stamped::after, .caja.apagada.stamped::after {
+            position: absolute; top: 10px; left: -10px; 
+            background: var(--alarm); color: #fff;
+            font-family: 'Archivo', sans-serif; font-size: clamp(0.7rem, 3vw, 0.9rem); padding: 5px 10px; transform: rotate(-15deg);
+            z-index: 15; border: 2px solid #000; opacity: 0; animation: pegarCinta 0.3s forwards 0.3s;
+        }
+        @keyframes pegarCinta { to { opacity: 1; transform: scale(1) rotate(-10deg); } }
+
+        /* --- DESCRIPCIÓN DINÁMICA --- */
+        .dynamic-desc-box {
+            position: absolute; bottom: clamp(100px, 18vh, 160px); left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 650px; text-align: center; z-index: 20;
+            font-size: clamp(0.8rem, 2vw, 1rem); line-height: 1.4; color: #000;
+            background: rgba(255,255,255,0.95); border: 2px dashed #000; padding: 12px; box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+            pointer-events: none; transition: opacity 0.3s ease; opacity: 0;
+            backdrop-filter: blur(4px);
+        }
+        
+        /* --- 5. CONTADOR INFERIOR GIGANTE --- */
+        .bottom-counter {
+            position: absolute; 
+            bottom: 0; left: 0; width: 100%; background: #fff; border-top: 4px solid #000;
+            padding: 10px 0 5px 0; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100; pointer-events: none; box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+            height: clamp(80px, 15vh, 120px);
+        }
+        .counter-number { 
+            font-family: 'Space Mono', monospace; font-size: clamp(2.5rem, 8vw, 5rem); 
+            color: var(--alarm); line-height: 0.9; font-weight: 700; letter-spacing: -2px;
+            text-shadow: 2px 2px 0px #000;
+        }
+        .counter-label { font-size: clamp(0.6rem, 2vw, 0.75rem); color: #000; text-transform: uppercase; font-weight: bold; text-align: center; margin-bottom: 2px;}
+
+        /* --- 6. MODAL MAPA --- */
+        #dataModal { 
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background: rgba(255,255,255,0.85); display: flex; justify-content: center; align-items: center; 
+            z-index: 200; backdrop-filter: blur(5px);
+            opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+        }
+        #dataModal.show { opacity: 1; pointer-events: auto; }
+        
+        .modal-content { 
+            background: #fff; color: #000; border: 5px solid #000; width: 90%; max-width: 600px; padding: 30px; 
+            box-shadow: 15px 15px 0 var(--accent); position: relative; 
+            transform: translateY(30px); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            max-height: 90vh; overflow-y: auto; /* Fix para celulares pequeños */
+        }
+        #dataModal.show .modal-content { transform: translateY(0); }
+
+        .btn-close { position: absolute; top: -15px; right: -15px; background:#000; color: #fff; font-size: 1.2rem; cursor: pointer; font-family: 'Space Mono'; font-weight: 800; padding: 5px 12px; border: 3px solid #fff;}
+        .btn-close:hover { background: var(--alarm); }
+        .modal-title { font-family: 'Archivo', sans-serif; font-size: clamp(2rem, 6vw, 3rem); text-transform: uppercase; margin: 0 0 15px 0; line-height: 1; border-bottom: 4px solid #000; padding-bottom: 10px;}
+        .modal-data-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: clamp(0.85rem, 3vw, 1rem); border-bottom: 1px dotted #000; padding-bottom: 5px;}
+        .data-label { color: #555; text-transform: uppercase; font-weight: 700;}
+        .data-value { font-weight: bold; text-align: right;}
+        .data-value.rojo { color: var(--alarm); font-size: clamp(1.2rem, 4vw, 1.5rem); font-family: 'Archivo', sans-serif;}
+        #map { width: 100%; height: clamp(180px, 30vh, 250px); margin-top: 15px; border: 3px solid #000; background: #eee; filter: grayscale(100%); }
+
+        /* --- TEXTO FINAL COMPLETO --- */
+        .article-explanation { background-color: #fff; color: #111; padding: 80px 5vw 100px 5vw; box-sizing: border-box; position: relative; z-index: 60;}
+        .article-content { max-width: 800px; margin: 0 auto; overflow: hidden; font-family: 'Arial', sans-serif; font-size: clamp(1rem, 3vw, 1.15rem); line-height: 1.8;}
+        
+        .article-explanation h3 { font-family: 'Archivo', sans-serif; font-size: clamp(1.3rem, 4vw, 1.5rem); margin: 40px 0 15px 0; border-bottom: 2px solid #000; padding-bottom: 5px; }
+        
+        blockquote { font-family: 'Space Mono', monospace; font-size: clamp(1rem, 3vw, 1.2rem); line-height: 1.6; border: 3px solid #000; margin: 40px 0; padding: clamp(15px, 5vw, 30px); background: #fff; box-shadow: 6px 6px 0 var(--accent); }
+        .cursor { display: inline-block; width: 10px; height: 1em; background-color: var(--accent); vertical-align: middle; animation: blinker 0.8s infinite; margin-left: 5px; }
+        .quote-author { display: block; font-family: 'Archivo', sans-serif; font-size: 0.85rem; text-transform: uppercase; margin-top: 15px; color: var(--accent); opacity: 0; transition: opacity 1s ease; }
+        .quote-author.visible { opacity: 1; }
+        .disclaimer-box { background: #f4f4f4; border: 2px dashed #000; padding: 20px; margin-top: 50px; font-size: 0.85rem; font-family: 'Space Mono', monospace; }
+
+        .reveal { opacity: 0; transform: translateY(40px); transition: all 0.8s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+
+        /* --- MEDIA QUERIES PARA RESPONSIVE FINO --- */
+        @media (max-width: 768px) {
+            :root {
+                --box-size: 160px;
+                --box-half: 80px;
+                --belt-height: 180px;
+            }
+            .status-panel { top: 10px; left: 10px; padding: 5px 8px; gap: 10px;}
+            .light-group { font-size: 0.6rem; }
+            .light { width: 10px; height: 10px; }
+            .dynamic-desc-box { bottom: clamp(85px, 15vh, 120px); width: 95%; padding: 8px;}
+        }
+
+        /* Ajustes para laptops o pantallas con poca altura */
+        @media (max-height: 700px) {
+            .main-hero-title { font-size: clamp(1.8rem, 4vw, 3.5rem); top: 2%; }
+            .caja-container { height: 200px; }
+            .caja { height: calc(var(--box-size) * 0.8); }
+            .bottom-counter { height: 80px; padding: 5px 0; }
+            .counter-number { font-size: 2.5rem; }
+            .dynamic-desc-box { bottom: 90px; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="industrial-section">
+        
+        <h1 class="main-hero-title">EL COLAPSO DE<br>LA ECONOMÍA REAL</h1>
+
+        <div class="status-panel" id="statusPanel">
+            <div class="light-group"><div class="light red active"></div><span>STOP</span></div>
+            <div class="light-group"><div class="light green"></div><span>RUN</span></div>
+        </div>
+
+        <div class="factory-belt-wrapper" id="beltWrapper">
+            <div class="start-hint" id="startHint">>>> SCROLL PARA INICIAR LA LÍNEA</div>
+            <div class="caja-container" id="trackBox">
+                
+                <div class="caja destruida" data-nombre="John Foos" data-ubicacion="Beccar, BA" data-despidos="50" data-estado="Cierre definitivo / Importación" data-lat="-34.46" data-lng="-58.53" data-descripcion="La tradicional marca de calzado cerró su fábrica en Beccar, San Isidro, despidiendo a 50 operarios para pasar a importar las zapatillas terminadas desde Medio Oriente.">
+                    <div class="flap top"></div><div class="flap bottom"></div>
+                    <div class="caja-logo"><h4>JOHN FOOS</h4><small>CALZADO</small></div>
+                </div>
+
+                <div class="caja apagada" data-nombre="Lumilagro" data-ubicacion="Tortuguitas, BA" data-despidos="170" data-estado="Hornos apagados / Importación" data-lat="-34.48" data-lng="-58.73" data-descripcion="La histórica fábrica de termos apagó sus hornos tras 83 años y despidió a 170 empleados. Ahora importa el vidrio desde China ante la caída de ventas y suba de costos.">
+                    <div class="flap top"></div><div class="flap bottom"></div>
+                    <div class="caja-logo"><h4>LUMILAGRO</h4><small>Vidrio / Bazar</small></div>
+                </div>
+
+                <div class="caja destruida" data-nombre="FATE" data-ubicacion="San Fernando, BA" data-despidos="920" data-estado="Cierre definitivo" data-lat="-34.45" data-lng="-58.55" data-descripcion="La fabricante de neumáticos anunció su cierre definitivo. La planta era la mayor del país.">
+                    <div class="flap top"></div><div class="flap bottom"></div>
+                    <div class="caja-logo"><h4>FATE</h4><small>NEUMÁTICOS</small></div>
+                </div>
+
+                <div class="caja destruida" data-nombre="Lácteos Verónica" data-ubicacion="Lehmann, SF" data-despidos="700" data-estado="Parálisis Productiva" data-lat="-31.12" data-lng="-61.53" data-descripcion="La crisis alcanza a sus plantas en Santa Fe. Acumula meses de deuda salarial y un parate total.">
+                    <div class="flap top"></div><div class="flap bottom"></div>
+                    <div class="caja-logo"><h4>VERÓNICA</h4><small>LÁCTEOS</small></div>
+                </div>
+
+                <div class="caja destruida" data-nombre="ARSA (SanCor)" data-ubicacion="Lincoln, BA" data-despidos="400" data-estado="Quiebra" data-lat="-34.86" data-lng="-61.53" data-descripcion="La Justicia declaró la quiebra de la compañía de yogures tras un fallido concurso preventivo.">
+                    <div class="flap top"></div><div class="flap bottom"></div>
+                    <div class="caja-logo"><h4>ARSA</h4><small>LÁCTEOS</small></div>
+                </div>
+
+                <div class="caja" data-nombre="Acindar" data-ubicacion="Villa Constitución, SF" data-despidos="310" data-estado="Suspensiones / Despidos" data-lat="-33.22" data-lng="-60.33" data-descripcion="La productora de acero lleva registrados varios períodos de paradas temporales en su producción.">
+                    <div class="flap top"></div><div class="flap bottom"></div>
+                    <div class="caja-logo"><h4>ACINDAR</h4><small>SIDERURGIA</small></div>
+                </div>
+
+                <div class="caja destruida" data-nombre="Emilio Alal" data-ubicacion="Chaco y Corrientes" data-despidos="260" data-estado="Cierre definitivo" data-lat="-29.14" data-lng="-59.26" data-descripcion="La compañía textil cerró definitivamente sus plantas algodoneras en Goya y Villa Ángela.">
+                    <div class="flap top"></div><div class="flap bottom"></div>
+                    <div class="caja-logo"><h4>EMILIO ALAL</h4><small>TEXTIL</small></div>
+                </div>
+
+                <div class="caja destruida" data-nombre="Kopelco (Tulipán)" data-ubicacion="Buenos Aires" data-despidos="220" data-estado="Despidos Masivos" data-lat="-34.58" data-lng="-58.45" data-descripcion="La dueña de la marca Tulipán despidió operarios ante una brutal caída de ventas del 50%.">
+                    <div class="flap top"></div><div class="flap bottom"></div>
+                    <div class="caja-logo"><h4>TULIPÁN</h4><small>LÁTEX / TEXTIL</small></div>
+                </div>
+
+                <div class="caja" data-nombre="Cervecería Quilmes" data-ubicacion="Zárate, BA" data-despidos="180" data-estado="Recorte de Personal" data-lat="-34.10" data-lng="-59.02" data-descripcion="La compañía redujo en un 43% la plantilla de su planta modelo en Zárate inaugurada hace poco.">
+                    <div class="flap top"></div><div class="flap bottom"></div>
+                    <div class="caja-logo"><h4>QUILMES</h4><small>BEBIDAS</small></div>
+                </div>
+
+                <div class="caja destruida" data-nombre="ADS / Fedders" data-ubicacion="Tierra del Fuego" data-despidos="156" data-estado="Quiebra / Toma" data-lat="-53.78" data-lng="-67.70" data-descripcion="La fabricante de aires acondicionados quebró. Los trabajadores tomaron la fábrica amparados por UOM.">
+                    <div class="flap top"></div><div class="flap bottom"></div>
+                    <div class="caja-logo"><h4>ADS FEDDERS</h4><small>ELECTRODOMÉSTICOS</small></div>
+                </div>
+
+                <div class="caja destruida" data-nombre="Cocot y Dufour" data-ubicacion="La Tablada, BA" data-despidos="140" data-estado="Cierre definitivo" data-lat="-34.68" data-lng="-58.53" data-descripcion="La marca de lencería bajó la persiana definitivamente al no poder competir contra la importación.">
+                    <div class="flap top"></div><div class="flap bottom"></div>
+                    <div class="caja-logo"><h4>COCOT</h4><small>TEXTIL</small></div>
+                </div>
+
+                <div class="caja destruida" data-nombre="SKF Argentina" data-ubicacion="Tortuguitas, BA" data-despidos="100" data-estado="Cierre definitivo" data-lat="-34.46" data-lng="-58.74" data-descripcion="La multinacional sueca de rodamientos cerró su planta tras décadas de presencia en el país.">
+                    <div class="flap top"></div><div class="flap bottom"></div>
+                    <div class="caja-logo"><h4>SKF</h4><small>AUTOPARTES</small></div>
+                </div>
+
+                <div class="caja destruida" data-nombre="Garbarino" data-ubicacion="Nacional" data-despidos="0" data-estado="Quiebra y Liquidación" data-lat="-34.60" data-lng="-58.38" data-descripcion="El Juzgado decretó la quiebra formal y ordenó la liquidación completa de la histórica cadena.">
+                    <div class="flap top"></div><div class="flap bottom"></div>
+                    <div class="caja-logo"><h4>GARBARINO</h4><small>RETAIL</small></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dynamic-desc-box" id="descBox">
+            <span id="descText">...</span>
+        </div>
+
+        <div class="bottom-counter" id="contadorHUD">
+            <div class="counter-label">PUESTOS DE TRABAJO DESTRUIDOS<br><span style="font-size:clamp(0.5rem, 1.5vw, 0.6rem); font-weight:normal; color:#555;">(ACUMULADO EN PANTALLA)</span></div>
+            <div class="counter-number" id="liveCounter">0000</div>
+        </div>
+
+    </div>
+
+    <div class="article-explanation" id="textoFinal">
+        <div class="article-content">
+            
+            <p class="reveal">La línea de producción se detiene. Desde el cambio de gestión, la crisis económica ha provocado la pérdida de casi 80.000 empleos y el cierre de miles de empresas en todo el país. El colapso del consumo interno, la escalada de los costos operativos y la apertura indiscriminada de importaciones han acorralado a la industria nacional.</p>
+            
+            <h3 class="reveal">Voces desde el galpón vacío</h3>
+            <p class="reveal">El impacto cruza todos los estratos y rubros. No discrimina entre pymes y gigantes corporativos. La histórica cadena <strong>Garbarino</strong> decretó la quiebra definitiva arrastrando sucursales y activos, mientras que la emblemática fábrica de neumáticos <strong>FATE</strong> clausuró operaciones destruyendo 920 empleos directos de un plumazo. En Tierra del Fuego, 156 trabajadores de <strong>ADS/Fedders</strong>, amparados por la Unión Obrera Metalúrgica (UOM), tomaron la fábrica tras meses sin cobrar salarios.</p>
+
+            <blockquote class="quoteContainer reveal" data-quote='"Aunque mucha gente no lo debe creer, hoy como cadena de supermercados que trabaja en la formalidad es muy difícil... A nosotros nos va muy mal."'>
+                <span class="typewriterText"></span><span class="cursor"></span>
+                <span class="quote-author">— Nicolás Braun, Gerente General de La Anónima.</span>
+            </blockquote>
+
+            <p class="reveal">El caso de <strong>Lumilagro</strong> sintetiza la gravedad del escenario industrial. La fábrica de termos más emblemática del país apagó sus hornos de vidrio continuo luego de 83 años de producción ininterrumpida, recortando 170 puestos de trabajo. Ante la desregulación, la escalada de costos energéticos y el derrumbe del consumo, la empresa concluyó que resulta más barato importar la ampolla de vidrio desde China que fabricarla en su planta de Tortuguitas.</p>
+
+            <blockquote class="quoteContainer reveal" data-quote='"Se consumen 4 millones de termos anuales en Argentina y sólo de Paraguay ingresaron 4 millones, más lo que ingresa por el norte. Son termos tóxicos y truchos, cuando están en contacto con agua caliente desprenden metales cancerígenos"'>
+                <span class="typewriterText"></span><span class="cursor"></span>
+                <span class="quote-author">— Martín Nadler, director ejecutivo y dueño de Lumilagro.</span>
+            </blockquote>
+
+            <h3 class="reveal">El espejismo macroeconómico y el fin del "Made in Argentina"</h3>
+            <p class="reveal">La situación desnuda una paradoja letal: mientras los gráficos oficiales celebran la baja de la inflación y el "equilibrio fiscal", la economía real se desangra. La estabilidad macroeconómica se está logrando a costa de congelar el consumo interno (el motor del 70% del PBI). Sumado a esto, sectores enteros como el textil (<strong>Cocot, Tulipán, Emilio Alal, Grupo Dass</strong>) han sido arrojados a competir contra una avalancha de importaciones asimétricas que vuelven inviable producir localmente.</p>
+
+            <p class="reveal">A este escenario de cierres y quiebras se suma el impacto de la reciente reglamentación de la <strong>Reforma Laboral</strong>. Con nuevas normativas que flexibilizan los costos de despido, modifican los esquemas de horas extras y facilitan las desvinculaciones, los empleadores tienen ahora menos barreras para recortar sus plantillas frente a la caída de ventas.</p>
+
+            <p class="reveal">El tablero rojo no perdona. Detrás de cada telegrama de despido hay una red de contención familiar que se rompe. Un salario menos que entra al kiosco del barrio, a la carnicería, a la escuela técnica. Las políticas de ajuste y la desregulación total pueden, eventualmente, acomodar las hojas de cálculo del Estado. La pregunta que queda resonando en las fábricas vacías es: <strong>¿A qué costo humano?</strong></p>
+            
+            <div class="disclaimer-box reveal">
+                <strong>ACLARACIÓN METODOLÓGICA<span class="blink">_</span></strong><br><br>
+                Este relevamiento interactivo visibiliza exclusivamente el impacto en las <strong>grandes industrias y marcas reconocidas</strong> (totalizando más de 3.600 despidos directos comprobables). <br><br>
+                No estamos contabilizando aquí el ecosistema Pyme: el pequeño comerciante, el taller metalúrgico familiar o el supermercado de barrio, que atraviesan exactamente la misma recesión, pero sufren el cierre de sus persianas en el más absoluto y doloroso anonimato estadístico.
+            </div>
+        </div>
+    </div>
+
+    <div id="dataModal">
+        <div class="modal-content">
+            <span class="btn-close" onclick="cerrarModal()">X</span>
+            <h2 class="modal-title" id="mTitulo">NOMBRE</h2>
+            <div class="modal-data-row"><span class="data-label">UBICACIÓN:</span><span class="data-value" id="mUbicacion">Localidad</span></div>
+            <div class="modal-data-row"><span class="data-label">ESTADO ACTUAL:</span><span class="data-value" id="mEstado">Estado</span></div>
+            <div class="modal-data-row"><span class="data-label">IMPACTO DIRECTO:</span><span class="data-value rojo" id="mDespidos">0</span></div>
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+    <script>
+        const beltWrapper = document.getElementById('beltWrapper');
+        const trackBox = document.getElementById('trackBox');
+        const descBox = document.getElementById('descBox');
+        const statusPanel = document.getElementById('statusPanel');
+        const startHint = document.getElementById('startHint');
+        
+        const redLight = document.querySelector('.light.red');
+        const greenLight = document.querySelector('.light.green');
+        const cajas = document.querySelectorAll('.caja');
+
+        let isScrollingTimeout;
+        let targetSumGlobal = 0;
+        let displayedCounterValue = 0;
+        let counterAnimating = false;
+
+        function updateCounterLoop() {
+            if (displayedCounterValue === targetSumGlobal) {
+                counterAnimating = false;
+                return;
+            }
+            counterAnimating = true;
+            
+            const diff = targetSumGlobal - displayedCounterValue;
+            let step = Math.ceil(Math.abs(diff) / 12) * Math.sign(diff); 
+            if (step === 0 && diff !== 0) step = Math.sign(diff); 
+            
+            displayedCounterValue += step;
+            
+            if ((step > 0 && displayedCounterValue > targetSumGlobal) || (step < 0 && displayedCounterValue < targetSumGlobal)) {
+                displayedCounterValue = targetSumGlobal;
+            }
+            
+            document.getElementById('liveCounter').innerText = displayedCounterValue.toString().padStart(4, '0');
+            requestAnimationFrame(updateCounterLoop);
+        }
+
+        beltWrapper.addEventListener('wheel', (evt) => {
+            const maxScrollLeft = beltWrapper.scrollWidth - beltWrapper.clientWidth;
+            
+            if (Math.abs(evt.deltaY) > Math.abs(evt.deltaX)) {
+                if ((evt.deltaY > 0 && beltWrapper.scrollLeft < maxScrollLeft - 5) || 
+                    (evt.deltaY < 0 && beltWrapper.scrollLeft > 5)) {
+                    
+                    evt.preventDefault(); 
+                    beltWrapper.scrollLeft += evt.deltaY * 2.5;
+                }
+            }
+        }, { passive: false });
+
+        beltWrapper.addEventListener('scroll', () => {
+            
+            if (beltWrapper.scrollLeft > 20 && startHint && startHint.parentNode) {
+                startHint.style.opacity = '0';
+                setTimeout(() => { if(startHint.parentNode) startHint.parentNode.removeChild(startHint); }, 500);
+            }
+
+            redLight.classList.remove('active');
+            greenLight.classList.add('active');
+
+            const centroPantalla = window.innerWidth / 2;
+            const puntoSello = centroPantalla + 150; 
+            
+            let cajaMasCercana = null;
+            let distanciaMinima = Infinity;
+            let currentTargetSum = 0;
+
+            cajas.forEach(caja => {
+                const rect = caja.getBoundingClientRect();
+                const centroCaja = rect.left + (rect.width / 2);
+                
+                if (rect.left < puntoSello) caja.classList.add('stamped');
+
+                if (centroCaja < centroPantalla + 50) { 
+                    currentTargetSum += parseInt(caja.getAttribute('data-despidos')) || 0;
+                }
+
+                const distanciaAlCentro = Math.abs(centroCaja - centroPantalla);
+                if (distanciaAlCentro < distanciaMinima) {
+                    distanciaMinima = distanciaAlCentro;
+                    cajaMasCercana = caja;
+                }
+            });
+
+            targetSumGlobal = currentTargetSum;
+            if (!counterAnimating) updateCounterLoop();
+
+            if (cajaMasCercana && beltWrapper.scrollLeft > 100) {
+                document.getElementById('descText').innerHTML = cajaMasCercana.getAttribute('data-descripcion');
+                descBox.style.opacity = "1";
+            }
+
+            clearTimeout(isScrollingTimeout);
+            isScrollingTimeout = setTimeout(() => {
+                redLight.classList.add('active');
+                greenLight.classList.remove('active');
+
+                if (cajaMasCercana) {
+                    const boxCenterPos = cajaMasCercana.offsetLeft + (cajaMasCercana.offsetWidth / 2);
+                    const targetScroll = boxCenterPos - (window.innerWidth / 2);
+                    
+                    if (Math.abs(beltWrapper.scrollLeft - targetScroll) > 5) {
+                        beltWrapper.scrollTo({ left: targetScroll, behavior: 'smooth' });
+                    }
+                }
+
+            }, 300); 
+        });
+
+        window.addEventListener('scroll', () => { 
+            beltWrapper.dispatchEvent(new Event('scroll')); 
+        });
+
+        const modal = document.getElementById('dataModal');
+        let myMap; let myMarker; 
+        
+        cajas.forEach(caja => {
+            caja.addEventListener('click', function() {
+                cajas.forEach(c => c.classList.remove('abierta'));
+                this.classList.add('abierta');
+
+                document.getElementById('mTitulo').innerText = this.getAttribute('data-nombre');
+                document.getElementById('mUbicacion').innerText = this.getAttribute('data-ubicacion');
+                document.getElementById('mEstado').innerText = this.getAttribute('data-estado');
+                
+                const despidos = this.getAttribute('data-despidos');
+                if (despidos === "0") {
+                    const estado = this.getAttribute('data-estado');
+                    document.getElementById('mDespidos').innerText = estado.toLowerCase().includes("quiebra") ? "Quiebra Total" : "Parálisis / 0";
+                } else {
+                    document.getElementById('mDespidos').innerText = "-" + despidos;
+                }
+                
+                setTimeout(() => {
+                    modal.classList.add('show');
+                    
+                    const lat = parseFloat(this.getAttribute('data-lat'));
+                    const lng = parseFloat(this.getAttribute('data-lng'));
+                    if (!myMap) {
+                        myMap = L.map('map').setView([lat, lng], 13);
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(myMap);
+                        myMarker = L.marker([lat, lng]).addTo(myMap);
+                    } else {
+                        myMap.setView([lat, lng], 13);
+                        myMarker.setLatLng([lat, lng]);
+                        setTimeout(() => { myMap.invalidateSize(); }, 200);
+                    }
+                }, 400); 
+            });
+        });
+
+        function cerrarModal() { 
+            modal.classList.remove('show'); 
+            setTimeout(() => {
+                cajas.forEach(c => c.classList.remove('abierta'));
+            }, 300);
+        }
+        window.onclick = function(event) { if (event.target == modal) { cerrarModal(); } }
+
+        const scrollObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    if(entry.target.classList.contains('quoteContainer') && !entry.target.classList.contains('typed')) {
+                        entry.target.classList.add('typed');
+                        iniciarTypewriter(entry.target);
+                    }
+                }
+            });
+        }, { threshold: 0.15 });
+
+        document.querySelectorAll('.reveal').forEach(el => { scrollObserver.observe(el); });
+
+        function iniciarTypewriter(quoteEl) {
+            const textToType = quoteEl.getAttribute('data-quote');
+            const typeTarget = quoteEl.querySelector('.typewriterText');
+            const authorTarget = quoteEl.querySelector('.quote-author');
+            let index = 0;
+
+            function type() {
+                if (index < textToType.length) {
+                    typeTarget.innerHTML += textToType.charAt(index);
+                    index++;
+                    setTimeout(type, Math.floor(Math.random() * 50) + 30);
+                } else {
+                    authorTarget.classList.add('visible');
+                }
+            }
+            type();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Peaje del Agua | RENDER_FINAL</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- ESTILOS BASE RENDER_FINAL --- */
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --accent: #0000FF; 
+            --alarm: #ff0000;
+            --surface: #f4f4f4;
+            --muted: #cccccc;
+        }
+
+        ::selection { background: var(--accent); color: #fff; }
+
+        body {
+            background-color: var(--bg); color: var(--text);
+            font-family: 'Space Mono', monospace; margin: 0; padding: 0;
+            line-height: 1.6; overflow-x: hidden;
+        }
+
+        /* --- 1. JUEGO INTEGRADO EN LA NOTA --- */
+        .interactive-container {
+            width: 100%;
+            border: 4px solid var(--text); background: #fff;
+            box-shadow: 12px 12px 0 var(--accent);
+            display: flex; flex-direction: column; position: relative;
+            margin: 40px 0; /* Espaciado para fluir con el texto */
+        }
+
+        .module-header { border-bottom: 2px dashed var(--text); padding: 20px; background: var(--surface); text-align: center;}
+        .module-title { font-family: 'Archivo', sans-serif; font-size: 1.5rem; text-transform: uppercase; margin: 0; }
+
+        .map-grid {
+            display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(8, 1fr);
+            gap: 2px; background: var(--text); border-bottom: none;
+            aspect-ratio: 10 / 8; padding: 2px;
+        }
+        .cell { 
+            background: var(--bg); display: flex; justify-content: center; align-items: center; 
+            font-family: 'Space Mono', monospace; font-size: clamp(0.8rem, 2vw, 1.2rem); font-weight: bold; 
+            cursor: pointer; transition: background 0.2s, color 0.2s; 
+        }
+        
+        .cell:hover:not(.water):not(.wall):not(.player) { background: rgba(0,0,255,0.1); }
+        .water { background: var(--accent); color: #fff; cursor: not-allowed; }
+        .water::after { content: '≈'; animation: wave 2s infinite linear; }
+        .wall { background: var(--alarm) !important; color: #fff !important; cursor: not-allowed; }
+        .wall::after { content: 'X'; }
+        .player { background: var(--text); color: #fff; cursor: default; }
+        .player::after { content: 'TÚ'; font-size: 0.6rem; animation: blinker 1s infinite; }
+        .path { background: var(--surface); cursor: default; }
+        .path::after { content: '·'; color: var(--muted); }
+
+        .forbidden-click { animation: shake-cell 0.3s; }
+
+        .btn-bypass {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.98);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.5s; padding: 20px;
+        }
+        .btn-bypass.show { opacity: 1; pointer-events: auto; }
+        
+        /* Indicador de Scroll sutil */
+        .scroll-hint {
+            color: #888; font-family: 'Space Mono', monospace; font-size: 0.75rem; 
+            text-transform: uppercase; letter-spacing: 2px; text-align: center;
+            cursor: pointer; transition: color 0.2s; margin-top: 15px; font-weight: bold;
+        }
+        .scroll-hint:hover { color: var(--accent); }
+        .scroll-hint span { display: inline-block; margin-top: 5px; animation: bounce 2s infinite; font-size: 1.5rem; }
+
+        @keyframes shake-cell { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(5px);} 60% {transform: translateY(3px);} }
+        
+        /* Animación para que lata SOLO el guion bajo */
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+        }
+        .latido { animation: heartbeat 1s infinite ease-in-out; display: inline-block; }
+
+        /* --- ZOOM LIGHTBOX --- */
+        .lightbox {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(255,255,255,0.95); z-index: 100000;
+            align-items: center; justify-content: center; cursor: zoom-out; backdrop-filter: blur(5px);
+        }
+        .lightbox.active { display: flex; }
+        .lightbox img {
+            max-width: 95vw; max-height: 95vh; border: 4px solid var(--text);
+            box-shadow: 12px 12px 0 var(--accent); object-fit: contain; background: #fff;
+        }
+
+        /* --- 2. CONTENEDOR CENTRAL DE LA NOTA --- */
+        .article-container { max-width: 720px; margin: 0 auto; padding: 60px 20px; display: block; opacity: 1; box-sizing: border-box;}
+        .article-header { margin-bottom: 50px; border-bottom: 4px solid var(--text); padding-bottom: 40px;}
+        .article-title { font-family: 'Archivo', sans-serif; font-size: clamp(2.5rem, 6vw, 4.5rem); line-height: 0.95; margin: 0 0 20px 0; color: var(--text); text-transform: uppercase; letter-spacing: -1px;}
+        .article-bajada { font-size: 1.3rem; color: #333; line-height: 1.4; margin-bottom: 30px; font-weight: 400; font-family: 'Space Mono', monospace;}
+        
+        .article-meta { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 1px; display: block; border-top: 1px solid var(--muted); padding-top: 15px; margin-top: 30px;}
+        .author-link { color: inherit; text-decoration: none; border-bottom: 1px dashed var(--muted); transition: all 0.2s ease; padding: 0 2px;}
+        .author-link:hover { color: #fff; background-color: var(--accent); border-bottom: 1px solid var(--accent); }
+
+        .article-text { font-size: 1.15rem; line-height: 1.8; margin-bottom: 30px; }
+        
+        /* Hipervínculos sin subrayado */
+        .text-link { color: var(--accent); font-weight: bold; text-decoration: none; border-bottom: none; transition: all 0.2s; padding: 0 2px; }
+        .text-link:hover { background: var(--accent); color: var(--bg); }
+
+        h3 { font-family: 'Archivo', sans-serif; font-size: 1.8rem; text-transform: uppercase; margin: 3rem 0 1.5rem 0; line-height: 1.2; border-bottom: 2px solid var(--text); display: inline-block; padding-bottom: 5px; scroll-margin-top: 40px; }
+
+        .foto-wrapper { position: relative; display: inline-block; width: 100%; margin: 40px 0 10px 0;}
+        .foto-zoom-hint { position: absolute; bottom: 10px; right: 10px; background: rgba(17,17,17,0.7); color: #fff; font-size: 0.65rem; padding: 4px 8px; text-transform: uppercase; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .foto-wrapper:hover .foto-zoom-hint { opacity: 1; }
+        .foto-delta { width: 100%; height: auto; border: 2px solid var(--text); display: block; cursor: zoom-in; }
+        .epigrafe { font-family: 'Space Mono'; font-size: 0.75rem; color: #666; margin-bottom: 40px; display: block; line-height: 1.4; }
+
+        /* --- 3. SLIDER REPARADO --- */
+        .slider-wrapper {
+            position: relative; width: 100%; border: 2px solid var(--text);
+            margin: 40px 0 10px 0; background: #000; overflow: hidden;
+            line-height: 0; font-size: 0;
+        }
+        .slider-img-bottom { width: 100%; height: auto; display: block; }
+        .slider-img-top {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            object-fit: cover; clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+            pointer-events: none;
+        }
+        .slider-input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; z-index: 10; }
+        .slider-line { position: absolute; top: 0; left: 50%; width: 4px; height: 100%; background: #fff; z-index: 5; transform: translateX(-50%); pointer-events: none; }
+        .slider-button { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 35px; height: 35px; background: #fff; border: 2px solid var(--text); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; color: var(--text); pointer-events: none;}
+        .slider-button::after { content: '↔'; }
+        
+        .label-catastro, .label-impunidad {
+            position: absolute; top: 15px; background: #fff; color: #000; 
+            font-family: 'Space Mono'; font-size: 0.7rem; font-weight: bold; padding: 5px 10px; z-index: 8; border: 1px solid #000; text-transform: uppercase; pointer-events: none;
+        }
+        .label-catastro { left: 15px; } .label-impunidad { right: 15px; }
+
+        .document-box { background-color: #f8f8f8; border: 2px dotted #999; padding: 30px; margin: 60px 0; }
+        .reveal-on-scroll { opacity: 0; transform: translateY(40px); transition: all 0.8s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .reveal-on-scroll.is-visible { opacity: 1; transform: translateY(0); }
+        #typewriter-text { min-height: 120px; display: inline-block; transform-origin: center left; }
+
+        /* Corrección Video */
+        .video-container { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; border: 2px solid var(--text); margin: 40px 0 10px 0; overflow: hidden; }
+        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+    </style>
+</head>
+<body>
+
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <img id="lightbox-img" src="" alt="Zoom">
+    </div>
+
+    <main class="article-container" id="main-article">
+        
+        <header class="article-header">
+            <h1 class="article-title">El Peaje del Agua</h1>
+            <p class="article-bajada">La privatización silenciosa de las costas en el Litoral.</p>
+            <span class="article-meta">:: INVESTIGACIÓN | POR <a href="/#equipo" class="author-link">JANET USINGER</a> | MARZO 2026</span>
+        </header>
+
+        <p class="article-text reveal-on-scroll">Nacer en el Litoral implica crecer con la certeza de que el río siempre está ahí. Sin embargo, tocar el agua es cada vez más difícil. Una red de alambrados, terraplenes y tranqueras ha ido cercando las costas, transformando lo que históricamente fue espacio público en un club VIP a cielo abierto.</p>
+        
+        <div class="interactive-container reveal-on-scroll" id="game-container">
+            <div class="module-header">
+                <h3 class="module-title" style="font-size: 1.2rem;">SIMULADOR DE ACCESO</h3>
+                <p style="font-size:0.7rem; font-weight:bold; margin-top:5px;">Objetivo: Trazar una ruta a pie hasta el río.</p>
+            </div>
+            <div class="map-grid" id="grid"></div>
+            <div class="btn-bypass" id="btn-bypass">
+                <h3 style="font-family: 'Archivo'; font-size: 1.8rem; color: var(--accent); margin: 0; text-align:center; text-transform: uppercase;">NO PUDISTE LLEGAR AL RÍO</h3>
+                <p style="font-family: 'Space Mono', monospace; font-size: 1rem; color: var(--text); text-align: center; margin: 10px 0 15px 0; font-weight: bold;">Algún privado se apropió de las tierras.</p>
+                <div class="scroll-hint" onclick="document.getElementById('muralla').scrollIntoView({behavior: 'smooth'})">
+                    Scroll<br><span>↓</span>
+                </div>
+            </div>
+        </div>
+
+        <h3 class="reveal-on-scroll" id="muralla">La Gran Muralla del Delta</h3>
+        <p class="article-text reveal-on-scroll">No es una metáfora, es un avance físico y medible. El último relevamiento de la Fundación Humedales encendió las alarmas: el 14% de la superficie del delta inferior ya se encuentra fragmentada de manera artificial.</p>
+
+        <div class="foto-wrapper reveal-on-scroll">
+            <span class="foto-zoom-hint">[ CLIC PARA AMPLIAR ]</span>
+            <img src="../images/delta01.png" alt="Delta 1" class="foto-delta" onclick="openLightbox(this.src)">
+        </div>
+        <span class="epigrafe reveal-on-scroll">Comparativa: Ejemplo de endicamiento nuevo en terrenos de isla. Fuente: Fundación Humedales (2025).</span>
+
+        <div class="foto-wrapper reveal-on-scroll">
+            <span class="foto-zoom-hint">[ CLIC PARA AMPLIAR ]</span>
+            <img src="../images/delta02.png" alt="Delta 2" class="foto-delta" onclick="openLightbox(this.src)">
+        </div>
+        <span class="epigrafe reveal-on-scroll">Comparativa: Ejemplo de endicamiento nuevo en terrenos de isla de Crestas de Playa. Fuente: Fundación Humedales (2025).</span>
+
+        <div class="foto-wrapper reveal-on-scroll">
+            <span class="foto-zoom-hint">[ CLIC PARA AMPLIAR MAPA ]</span>
+            <img src="../images/delta03.jpg" alt="Mapa Terraplenes" class="foto-delta" onclick="openLightbox(this.src)">
+        </div>
+        <span class="epigrafe reveal-on-scroll">Detalle de endicamientos, urbanizaciones y terraplenes en el Bajo Paraná. Fuente: Fundación Humedales (2025).</span>
+
+        <p class="article-text reveal-on-scroll">Se han levantado casi <strong>9.000 kilómetros de terraplenes</strong> para aislar barrios privados y zonas agroganaderas. La longitud es equivalente a la de la Gran Muralla China. Estas barreras de tierra monumentales se construyen con topadoras para cortar el flujo natural del agua, secar los humedales y transformarlos en suelo firme para el ganado, la soja o el desarrollo inmobiliario. Al alterar la topografía, destruyen el efecto "esponja" de las islas. El 60% de esta área endicada de forma ilegal o irregular se ubica en la provincia de Entre Ríos, modificando para siempre la geografía y la vida de las comunidades isleñas.</p>
+
+        <h3 class="reveal-on-scroll">Paraná: una capital sin costa</h3>
+        <p class="article-text reveal-on-scroll">En la capital provincial, la crisis de acceso llegó a un punto crítico. De acuerdo a relevamientos de asambleas ciudadanas, el 60% de la ribera paranaense, en el tramo que va desde La Toma hasta Punta del Mono, se encuentra usurpada o bloqueada por privados. El avance sobre la línea de ribera tiene casos emblemáticos que ilustran la impunidad con la que opera el negocio inmobiliario.</p>
+
+        <p class="article-text reveal-on-scroll">En el sector que históricamente formaba parte del complejo municipal La Toma, justo por encima de la popular y concurrida playa Los Arenales, hoy se erige "Puerto Barrancas". Este barrio residencial de alta gama, recostado sobre la barranca, se promociona abiertamente ofreciendo una "playa de uso exclusivo" y guardería náutica privada. Al alambrar hasta la orilla, no solo violan el Código Civil y Comercial que establece el libre tránsito por el camino de sirga (los 15 metros desde la ribera), sino que se apropian de un paisaje y un bien natural que le pertenece a los paranaenses. Mientras las playas públicas de Paraná colapsan en verano, un puñado de privilegiados disfruta de un balneario privado construido sobre terrenos usurpados al dominio público.</p>
+
+        <div class="reveal-on-scroll" style="display:flex; justify-content:center; margin: 40px 0;">
+            <blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/p/CpyXZ3-jqhz/" data-instgrm-version="14" style=" background:#FFF; border:0; margin: 1px; max-width:540px; min-width:326px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);"></blockquote>
+        </div>
+
+        <h3 class="reveal-on-scroll">Desviar un río y burlar a la Corte</h3>
+        <p class="article-text reveal-on-scroll">Si levantar muros parece grave, en Gualeguaychú el negocio inmobiliario fue un paso más allá: modificó la geografía a la fuerza y desobedecer al máximo tribunal del país. El barrio fluvial <a href="https://www.amarrasdelgualeguaychu.com" target="_blank" class="text-link">"Amarras"</a>, desarrollado por la firma Altos de Unzué SA, es el monumento definitivo a la impunidad ambiental en el Litoral. Para llenar las lagunas artificiales de su country náutico, la empresa rompió la costa, removió volúmenes gigantescos de tierra y alteró severamente el humedal del río Gualeguaychú.</p>
+
+        <p class="article-text reveal-on-scroll">El daño ecosistémico y el riesgo de inundaciones para los vecinos de la zona fue tan evidente que en 2019 la Corte Suprema de Justicia de la Nación emitió un fallo histórico ordenando recomponer el ambiente. Cuatro años después, en agosto de 2023, la justicia local ordenó el desmantelamiento total del barrio, exigiendo literalmente "romper todo" para que el río volviera a su cauce natural. Incluso, el juez rechazó de plano un escandaloso intento de pacto entre la empresa y la Fiscalía de Estado provincial para "suavizar" la condena y evitar la demolición.</p>
+
+        <p class="article-text reveal-on-scroll">¿Qué hizo la empresa desarrolladora ante este revés judicial? Ignorar por completo la sentencia. Lejos de acatar la orden de recomposición, los abogados litigantes denunciaron que la firma continuó realizando movimientos de suelo y abriendo nuevos canales artificiales en plena orden de cese. Esta burla a la justicia forzó a que el caso se asome al fuero penal por desobediencia judicial. A pesar de tener a la Corte Suprema y a los tribunales locales en su contra, el barrio sigue sin desmantelarse y la sanación del ecosistema sigue frenada en un laberinto de apelaciones sin fin documentado en el <a href="https://gualeguaychu.gov.ar/tema/Caso%20Amarras/" target="_blank" class="text-link">registro oficial del Municipio de Gualeguaychú</a>.</p>
+
+        <div class="slider-wrapper reveal-on-scroll">
+            <img src="../images/amarras01.png" class="slider-img-bottom" alt="Satelital">
+            <img src="../images/amarras02.png" class="slider-img-top" id="slider-top" alt="Gris">
+            <input type="range" min="0" max="100" value="50" class="slider-input" id="slider-range">
+            <div class="slider-line" id="slider-line"><div class="slider-button"></div></div>
+            <span class="label-catastro">PLANO (LEGAL)</span>
+            <span class="label-impunidad">REALIDAD (SATÉLITE)</span>
+        </div>
+        <span class="epigrafe reveal-on-scroll">Deslizá para comparar el plano catastral vs el desvío físico del río por la inmobiliaria. Imágenes: ATER.</span>
+
+        <h3 class="reveal-on-scroll">El golpe final: La "pampeanización"</h3>
+        <p class="article-text reveal-on-scroll">El reciente lanzamiento de la licitación para privatizar la gestión de la Vía de Navegación Troncal (VNT) del río Paraná no es solo una obra de infraestructura: es una sentencia de muerte para la dinámica del humedal. El proyecto exige profundizar el canal de 34 a 44 pies de calado (alrededor de 13 metros de profundidad) para permitir el paso de buques oceánicos mucho más grandes y reducir los costos de exportación. Es un caso insólito a nivel global: mientras en Europa y China adaptan el tamaño de los barcos al caudal natural de sus ríos, en Argentina la política de Estado es adaptar el río a los barcos.</p>
+        
+        <p class="article-text reveal-on-scroll">Llevar el canal principal a esa profundidad implica remover y dragar más de 150 millones de metros cúbicos de sedimento, arena y tierra del lecho del río. Con la destrucción mecánica del fondo se elimina el hábitat directo de los organismos bentónicos y se arrasan los sitios clave de desove y cría de peces. A esto se le suma un envenenamiento invisible: el dragado continuo libera metales pesados y agroquímicos que llevaban décadas acumulados y decantados en el sedimento. La turbidez del agua se dispara, el oxígeno disponible baja drásticamente y la vida acuática, literalmente, se asfixia.</p>
+
+        <p class="article-text reveal-on-scroll">Además, alterar la topografía del lecho cambia el comportamiento físico del agua. Al profundizar el canal central de la VNT, las desembocaduras de los ríos y arroyos secundarios quedan geográficamente más elevadas respecto al nivel del agua, lo que impide que el flujo ingrese con normalidad. El agua corre mucho más rápido por el "tubo" central y golpea con violencia contra las orillas. Esa aceleración, sumada al fuerte oleaje de los megabuques, termina erosionando las barrancas ribereñas hasta provocar su caída.</p>
+
+        <div class="reveal-on-scroll" style="display:flex; justify-content:center; margin: 40px 0;">
+            <blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/reel/DV0xpFOjQij/" data-instgrm-version="14" style=" background:#FFF; border:0; margin: 1px; max-width:540px; min-width:326px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);">
+                <div style="padding:16px;">
+                    <a href="https://www.instagram.com/reel/DV0xpFOjQij/" style="color:#0000FF; text-decoration:none; font-family: 'Space Mono', monospace; font-size: 14px;" target="_blank">Ver Reel en Instagram</a>
+                </div>
+            </blockquote>
+        </div>
+
+        <p class="article-text reveal-on-scroll">A nivel sistémico, este efecto de vaciado es lo que los especialistas denominan la <strong>"pampeanización" del Paraná</strong>. La profundidad extrema del canal central actúa como una gigantesca aspiradora que succiona el agua de los riachos y lagunas laterales, secando los humedales anexos. Al secarse, estas islas dejan de fijar carbono y el río pierde su capacidad natural de filtrar toxinas. Desaparece la vegetación y los sitios de refugio para aves y mamíferos. Menos agua distribuida en el territorio equivale a un riesgo exponencialmente mayor de incendios.</p>
+        
+        <p class="article-text reveal-on-scroll">Las consecuencias socioeconómicas no tardan en reflejarse en las costas. Menos cantidad y diversidad de peces significa el fin inmediato del sustento para los pescadores artesanales y las comunidades locales. A nivel urbano, el peligro sale por las canillas: los millones de metros cúbicos de sedimentos removidos amenazan con obstruir las bocas de toma de agua de las plantas potabilizadoras que abastecen a las ciudades ribereñas.</p>
+
+        <div class="video-container reveal-on-scroll">
+            <iframe src="https://www.youtube.com/embed/LtGmkS5f3k4?vq=hd1080&rel=0&modestbranding=1" title="Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <span class="epigrafe reveal-on-scroll">Gentileza El Once - Paraná.</span>
+
+        <p class="article-text reveal-on-scroll">Todo esto avanza en flagrante violación del Acuerdo de Escazú y la Ley General del Ambiente: el Estado omite sistemáticamente la presentación de Estudios de Impacto Ambiental Acumulativo de estas megaobras y esquiva el llamado a audiencias públicas, silenciando a las comunidades que sufren el impacto directo en sus territorios.</p>
+
+        <div id="typewriter-container" class="reveal-on-scroll">
+            <p class="article-text" id="typewriter-text" style="font-size: 1.5rem; font-family: 'Archivo'; text-transform:uppercase; border-left: 4px solid var(--accent); padding-left: 20px; margin-top: 60px;"></p>
+        </div>
+
+        <div class="document-box reveal-on-scroll">
+            <h3 style="font-size: 1.1rem; text-transform: uppercase; border:none; margin:0 0 10px 0;">Fuente Documental</h3>
+            <p style="font-size: 0.8rem; color: #555; margin-bottom:20px;">Fieles a nuestra política de apertura y transparencia de datos, adjuntamos el informe de Wetlands International (2025) utilizado para la reconstrucción geoespacial de esta investigación.</p>
+            <div class="pdf-container">
+                <iframe src="1_Areas-endicadas.-Actualizacion-2025-1.pdf" width="100%" height="500px"></iframe>
+            </div>
+        </div>
+
+    </main>
+
+    <script async src="//www.instagram.com/embed.js"></script>
+
+    <script>
+        function openLightbox(src) { document.getElementById('lightbox-img').src = src; document.getElementById('lightbox').classList.add('active'); }
+        function closeLightbox() { document.getElementById('lightbox').classList.remove('active'); }
+
+        // --- LÓGICA DEL JUEGO INTEGRADO ---
+        const gridEl = document.getElementById('grid');
+        let playerPos = { x: 0, y: 4 }; let totalClicks = 0; let isGameOver = false;
+
+        function initMap() {
+            gridEl.innerHTML = '';
+            for (let y = 0; y < 8; y++) {
+                for (let x = 0; x < 10; x++) {
+                    const cell = document.createElement('div'); cell.className = 'cell';
+                    if (x === 9) cell.classList.add('water');
+                    if (x === playerPos.x && y === playerPos.y) cell.classList.add('player');
+                    cell.onclick = () => handleMove(x, y, cell);
+                    gridEl.appendChild(cell);
+                }
+            }
+        }
+
+        function handleMove(x, y, el) {
+            if (isGameOver) return;
+            const isAdj = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y) === 1;
+            totalClicks++;
+            
+            if (!isAdj || x < playerPos.x) {
+                el.classList.add('wall');
+                if(totalClicks >= 4) triggerGameOver();
+                return;
+            }
+            
+            if (totalClicks === 2 || totalClicks === 3) {
+                el.classList.add('wall');
+                return;
+            }
+            
+            playerPos = { x, y };
+            initMap();
+            
+            if(totalClicks >= 4) triggerGameOver();
+        }
+
+        function triggerGameOver() { 
+            isGameOver = true; 
+            document.getElementById('btn-bypass').classList.add('show'); 
+        }
+
+        // --- LÓGICA DEL SLIDER ---
+        const range = document.getElementById('slider-range');
+        const topImg = document.getElementById('slider-top');
+        const sLine = document.getElementById('slider-line');
+        
+        function syncSlider(v) {
+            topImg.style.clipPath = `polygon(0 0, ${v}% 0, ${v}% 100%, 0 100%)`;
+            sLine.style.left = v + '%';
+        }
+        
+        range.addEventListener('input', (e) => syncSlider(e.target.value));
+
+        // --- LÓGICA DEL TYPEWRITER ---
+        const typeTxt = "El río es de todos, dicta la ley. Pero en la práctica, el derecho al agua dulce hoy se cotiza en metros cuadrados, se alambra, o se draga para que pase el capital extranjero. ";
+        let ti = 0; let hasTyped = false;
+        function type() {
+            if (ti < typeTxt.length) {
+                document.getElementById("typewriter-text").innerHTML = typeTxt.substring(0, ti+1) + '<span style="color:var(--accent); font-weight:bold;">_</span>';
+                ti++; setTimeout(type, 35);
+            } else {
+                document.getElementById("typewriter-text").innerHTML = typeTxt + '<span class="latido" style="color:var(--accent); font-weight:bold;">_</span>';
+            }
+        }
+
+        // --- OBSERVER PARA ANIMACIONES DE SCROLL ---
+        const obs = new IntersectionObserver((es) => {
+            es.forEach(e => {
+                if (e.isIntersecting) {
+                    e.target.classList.add('is-visible');
+                    if(e.target.id === 'typewriter-container' && !hasTyped) {
+                        hasTyped = true;
+                        type();
+                    }
+                }
+            });
+        }, { threshold: 0.15 });
+        document.querySelectorAll('.reveal-on-scroll').forEach(el => obs.observe(el));
+
+        // Iniciar el juego al cargar
+        initMap();
+    </script>
+</body>
+</html>

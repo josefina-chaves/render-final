@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La trampa de ser tu propio jefe | RENDER_FINAL</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- ESTILOS BASE RENDER_FINAL (PALETA PURA Y CLARA) --- */
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --accent: #0000FF; 
+            --surface: #f4f4f4;
+            --surface-dark: #e0e0e0;
+            --border: #000000;
+            --muted: #cccccc;
+        }
+
+        ::selection { background: var(--accent); color: #fff; }
+
+        body {
+            background-color: var(--bg); color: var(--text);
+            font-family: 'Space Mono', monospace; margin: 0; padding: 0;
+            line-height: 1.6; overflow-x: hidden;
+            padding-bottom: 120px; /* Espacio para la barra sticky */
+        }
+
+        /* Bloqueo de scroll cuando sale el pop-up */
+        body.locked { overflow: hidden; }
+
+        .blink { animation: blinker 1s linear infinite; color: var(--accent); }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        /* --- MARQUESINA --- */
+        .marquee-container {
+            background: var(--surface); color: var(--border); overflow: hidden; white-space: nowrap;
+            padding: 8px 0; font-size: 0.8rem; text-transform: uppercase; border-bottom: 2px solid var(--border);
+        }
+        .marquee-content { display: inline-block; animation: marquee 60s linear infinite; }
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-50%, 0); } }
+
+        .site-header {
+            padding: 1rem 5%; border-bottom: 2px solid var(--border); 
+            background: rgba(255,255,255,0.98); z-index: 100; position: sticky; top: 0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.8rem; letter-spacing: -1px; text-decoration: none; color: var(--border); }
+
+        /* --- CONTENEDOR CENTRAL --- */
+        .article-container { max-width: 720px; margin: 0 auto; padding: 60px 20px; box-sizing: border-box; }
+        
+        .article-header { margin-bottom: 50px; border-bottom: 4px solid var(--border); padding-bottom: 40px; }
+        .article-title { font-family: 'Archivo', sans-serif; font-size: clamp(2.5rem, 8vw, 4.5rem); line-height: 0.95; margin: 0 0 20px 0; color: var(--border); text-transform: uppercase; letter-spacing: -1px;}
+        .article-bajada { font-size: 1.3rem; color: #333; line-height: 1.4; margin-bottom: 30px; font-weight: 400; font-family: 'Space Mono', monospace; }
+        .article-meta { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 1px; display: block; border-top: 1px solid #ddd; padding-top: 15px; margin-top: 30px;}
+
+        .article-text { font-size: 1.15rem; line-height: 1.8; margin-bottom: 30px; }
+        .article-text strong { color: var(--accent); }
+        h3 { font-family: 'Archivo', sans-serif; font-size: clamp(1.5rem, 5vw, 1.8rem); text-transform: uppercase; margin: 3rem 0 1.5rem 0; line-height: 1.2; border-bottom: 2px solid var(--border); display: inline-block; padding-bottom: 5px; }
+        
+        blockquote { font-family: 'Space Mono', monospace; font-size: 1.05rem; line-height: 1.6; border-left: 4px solid var(--accent); margin: 40px 0; padding-left: 20px; color: #111; background: var(--surface); padding: 20px;}
+        ul { font-family: 'Space Mono', monospace; font-size: 1.05rem; line-height: 1.8; margin-bottom: 30px; padding-left: 20px;}
+        ul li { margin-bottom: 10px; }
+        ul li::marker { color: var(--accent); content: '>> '; font-weight: bold;}
+
+        .reveal-on-scroll { opacity: 0; transform: translateY(40px); transition: all 0.8s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .reveal-on-scroll.is-visible { opacity: 1; transform: translateY(0); }
+
+        /* --- STICKY APP BAR (EL ALGORITMO - FONDO BLANCO) --- */
+        .app-status-bar {
+            position: fixed; bottom: -150px; left: 0; width: 100%;
+            background: #fff; color: var(--border); border-top: 4px solid var(--border);
+            z-index: 1000; transition: bottom 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex; flex-direction: column; font-family: 'Space Mono', monospace;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+        }
+        .app-status-bar.active { bottom: 0; }
+        
+        .app-metrics { display: flex; justify-content: space-around; padding: 15px 10px; align-items: center;}
+        .metric-box { text-align: center; }
+        .metric-label { font-size: 0.65rem; color: #888; text-transform: uppercase; display: block; letter-spacing: 1px;}
+        .metric-value { font-family: 'Archivo', sans-serif; font-size: 1.8rem; line-height: 1; color: var(--border);}
+        .metric-value.accent { color: var(--accent); }
+        
+        .app-console { 
+            background: var(--surface); color: var(--accent); font-size: 0.85rem; 
+            padding: 10px 15px; text-align: center; border-top: 2px dashed var(--muted);
+            text-transform: uppercase; font-weight: bold;
+        }
+
+        /* --- EXPLICACIÓN DE SIMULACIÓN --- */
+        .simulation-intro {
+            background: var(--surface); border: 2px dashed var(--border);
+            padding: 30px; margin: 60px 0; border-left: 6px solid var(--accent);
+            position: relative;
+        }
+        .simulation-title { font-family: 'Space Mono', monospace; color: var(--accent); font-size: 1rem; text-transform: uppercase; margin: 0 0 15px 0; font-weight: bold; letter-spacing: 1px;}
+
+        /* --- POP-UPS EMERGENTES QUE BLOQUEAN LECTURA --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);
+            z-index: 9999; display: none; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+
+        .gig-modal {
+            background: #fff; border: 4px solid var(--accent); padding: 40px 30px; 
+            box-shadow: 12px 12px 0 var(--border); text-align: center; 
+            max-width: 450px; width: 90%; position: relative;
+            transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-overlay.active .gig-modal { transform: scale(1); }
+        
+        .gig-header { font-family: 'Space Mono', monospace; font-size: 0.85rem; color: var(--accent); text-transform: uppercase; margin-bottom: 20px; letter-spacing: 2px; border-bottom: 2px dashed var(--accent); padding-bottom: 10px;}
+        .gig-amount { font-family: 'Archivo', sans-serif; font-size: 4rem; line-height: 1; color: var(--border); margin-bottom: 10px;}
+        .gig-details { font-family: 'Space Mono', monospace; font-size: 0.9rem; font-weight: bold; margin-bottom: 30px; color: #555;}
+        
+        .btn-accept {
+            appearance: none; background: var(--accent); border: 2px solid var(--accent); padding: 15px 30px; 
+            cursor: pointer; font-family: 'Space Mono', monospace; font-weight: bold; color: #fff; 
+            font-size: 1.1rem; text-transform: uppercase; width: 100%; transition: all 0.2s;
+        }
+        .btn-accept:hover { background: transparent; color: var(--accent); }
+        .btn-ignore {
+            background: transparent; border: none; color: #999; font-family: 'Space Mono', monospace;
+            font-size: 0.7rem; text-transform: uppercase; margin-top: 15px; cursor: pointer; text-decoration: underline;
+        }
+        .btn-ignore:hover { color: var(--border); }
+
+        /* --- FINAL Y DESCONEXIÓN (SIN NEGRO) --- */
+        .final-section { text-align: center; margin: 80px 0 40px 0; padding-top: 60px; border-top: 2px solid var(--border);}
+        .final-title { font-family: 'Archivo', sans-serif; font-size: clamp(2rem, 7vw, 2.5rem); text-transform: uppercase; line-height: 1; margin-bottom: 20px;}
+        
+        .logout-widget { background: var(--surface); color: var(--border); border: 4px solid var(--border); padding: 40px; margin-top: 40px; display: flex; flex-direction: column; align-items: center; box-shadow: -8px 8px 0 var(--accent);}
+        .logout-title { font-family: 'Space Mono', monospace; font-size: 1rem; font-weight: bold; text-transform: uppercase; color: var(--accent); margin: 0 0 20px 0;}
+        .logout-stat { font-family: 'Archivo', sans-serif; font-size: 4rem; margin-bottom: 30px; line-height: 1;}
+        
+        .btn-logout { 
+            background: #fff; color: var(--border); border: 2px solid var(--border); 
+            padding: 15px 25px; font-family: 'Space Mono', monospace; font-weight: bold; 
+            cursor: pointer; text-transform: uppercase; transition: all 0.2s; width: 100%; max-width: 350px;
+        }
+        .btn-logout:hover { background: var(--border); color: #fff; }
+
+        /* Triggers invisibles para activar los modales al hacer scroll */
+        .scroll-trigger { height: 1px; width: 100%; margin: 40px 0; opacity: 0; }
+
+        @media (max-width: 768px) {
+            .app-metrics { padding: 10px 5px; }
+            .metric-value { font-size: 1.4rem; }
+            .metric-label { font-size: 0.55rem; }
+            .gig-amount { font-size: 3rem; }
+            .logout-widget { padding: 30px 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="marquee-container">
+        <div class="marquee-content">
+            RENDER_FINAL_ [v.2.0.26] /// PERIODISMO DE DATOS Y NARRATIVAS VISUALES /// LA VERDAD ESTÁ EN EL ARCHIVO /// PROCESANDO SEÑAL /// RENDER_FINAL_ [v.2.0.26] /// PERIODISMO DE DATOS Y NARRATIVAS VISUALES /// LA VERDAD ESTÁ EN EL ARCHIVO /// PROCESANDO SEÑAL /// 
+        </div>
+    </div>
+    
+    <header class="site-header">
+        <a href="#" class="logo">RENDER_FINAL<span class="blink">_</span></a>
+    </header>
+
+    <div class="app-status-bar" id="app-bar">
+        <div class="app-metrics">
+            <div class="metric-box">
+                <span class="metric-label">Meta Diaria</span>
+                <span class="metric-value">$25.000</span>
+            </div>
+            <div class="metric-box">
+                <span class="metric-label">Ingreso Actual</span>
+                <span class="metric-value accent" id="metric-earnings">$0</span>
+            </div>
+            <div class="metric-box">
+                <span class="metric-label">Tasa Aceptación</span>
+                <span class="metric-value" id="metric-rating">100%</span>
+            </div>
+        </div>
+        <div class="app-console" id="app-console">>>> MANTENIENDO CONEXIÓN... <span class="blink">_</span></div>
+    </div>
+
+    <div class="modal-overlay" id="modal-1">
+        <div class="gig-modal">
+            <div class="gig-header">>>> NUEVA ASIGNACIÓN DE TAREA</div>
+            <div class="gig-amount">+$5.500</div>
+            <div class="gig-details">Distancia: 2.4 KM | Tiempo est: 15 MIN</div>
+            <button class="btn-accept" onclick="acceptGig(1, 5500, 'TARIFA BASE APLICADA. EXCELENTE INICIO.')">[ ACEPTAR VIAJE ]</button>
+            <button class="btn-ignore" onclick="ignoreGig(1)">Rechazar y bajar calificación</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-2">
+        <div class="gig-modal">
+            <div class="gig-header">>>> NUEVA ASIGNACIÓN DE TAREA</div>
+            <div class="gig-amount">+$4.200</div>
+            <div class="gig-details">Distancia: 5.1 KM | Tiempo est: 35 MIN</div>
+            <button class="btn-accept" onclick="acceptGig(2, 1200, 'ALERTA: EXCESO DE REPARTIDORES. TARIFA DINÁMICA REDUCIDA. GANANCIA REAL: $1.200')">[ ACEPTAR VIAJE ]</button>
+            <button class="btn-ignore" onclick="ignoreGig(2)">Rechazar y bajar calificación</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-3">
+        <div class="gig-modal">
+            <div class="gig-header">>>> ZONA DE ALTA DEMANDA (LLUVIA)</div>
+            <div class="gig-amount">+$8.000</div>
+            <div class="gig-details">Distancia: 8.5 KM | Clima: HOSTIL</div>
+            <button class="btn-accept" onclick="acceptGig(3, -2500, 'ALERTA: CLIENTE CANCELÓ. PENALIDAD POR DESVÍO APLICADA. COSTO NAFTA: -$2.500')">[ ACEPTAR VIAJE ]</button>
+            <button class="btn-ignore" onclick="ignoreGig(3)">Rechazar y bajar calificación</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-4">
+        <div class="gig-modal">
+            <div class="gig-header">>>> VIAJE DE RETORNO SUGERIDO</div>
+            <div class="gig-amount">+$2.100</div>
+            <div class="gig-details">Distancia: 3.0 KM | Tasa Riesgo: BAJA</div>
+            <button class="btn-accept" onclick="acceptGig(4, -500, 'ALERTA: CUOTA MANTENIMIENTO PLATAFORMA DEBITADA AUTOMÁTICAMENTE. BALANCE: -$500')">[ ACEPTAR VIAJE ]</button>
+            <button class="btn-ignore" onclick="ignoreGig(4)">Rechazar y bajar calificación</button>
+        </div>
+    </div>
+
+
+    <main class="article-container">
+        
+        <header class="article-header">
+            <h1 class="article-title">La trampa de ser tu propio jefe</h1>
+            <p class="article-bajada">El trabajo dejó de ser un lugar para convertirse en una interfaz. Ya no se entra a una fábrica ni se firma un contrato: se descarga una aplicación.</p>
+            <span class="article-meta">:: ECONOMÍA DE PLATAFORMAS | POR JANET USINGER | 14.04.26</span>
+        </header>
+
+        <p class="article-text reveal-on-scroll">En la última década, el trabajo dejó de ser un lugar para convertirse en una interfaz. Ya no se entra a una fábrica ni se firma un contrato: se descarga una aplicación. Este fenómeno, conocido como "uberización", se presenta como una solución flexible frente al desempleo, pero empieza a mostrar su cara más incómoda: la de una precarización silenciosa, extendida y —cada vez más— saturada.</p>
+
+        <h3 class="reveal-on-scroll">Del empleo al algoritmo</h3>
+        
+        <p class="article-text reveal-on-scroll">El término "uberización" describe un modelo en el que plataformas digitales intermedian entre clientes y trabajadores, eliminando estructuras tradicionales y trasladando costos y riesgos al individuo.</p>
+        
+        <p class="article-text reveal-on-scroll">En este esquema, el trabajador deja de ser empleado para convertirse en "colaborador independiente". Sin embargo, esa independencia es relativa: el algoritmo define tarifas, asigna tareas, evalúa desempeño y, en muchos casos, puede desconectar al trabajador sin explicaciones.</p>
+
+        <blockquote class="reveal-on-scroll">
+            "Prefiero tener mi libertad y mi independencia antes que estar esclavizado por un aguinaldo o por unas vacaciones."<br><br>
+            <span style="font-size: 0.85rem; color: #666; font-family: 'Space Mono', monospace;">— Alexis, 27 años, trabajador de plataformas.</span>
+        </blockquote>
+
+        <p class="article-text reveal-on-scroll">Según análisis recientes, este modelo no solo se limita a servicios de transporte o delivery. Se está expandiendo hacia profesiones como la abogacía, la psicología o la consultoría, fragmentando tareas y diluyendo la relación laboral clásica. El resultado: más flexibilidad en teoría, pero menos derechos en la práctica.</p>
+
+        <div class="simulation-intro reveal-on-scroll" id="sim-trigger">
+            <h4 class="simulation-title">>>> INICIANDO SIMULACIÓN LABORAL_</h4>
+            <p class="article-text" style="margin-bottom: 0;">A partir de este momento, tu dispositivo está conectado al algoritmo de reparto. <strong>La barra inferior es tu interfaz de trabajo.</strong> Tu objetivo para cubrir el día es de $25.000. Las ofertas de viaje irrumpirán en tu pantalla bloqueando tu lectura. Deberás interactuar con el sistema para poder avanzar. Suerte.</p>
+        </div>
+
+        <div class="scroll-trigger" id="trigger-1" data-modal="1"></div>
+
+        <h3 class="reveal-on-scroll">La promesa de la salida laboral</h3>
+
+        <p class="article-text reveal-on-scroll">En contextos de crisis económica, las plataformas digitales se posicionaron como un "colchón" frente al desempleo. Hoy, manejar para una app o repartir pedidos no es necesariamente una elección de autonomía, sino una estrategia directa de supervivencia. Como sintetiza una tendencia creciente: trabajar para una app se vuelve una changa obligada para llegar a fin de mes.</p>
+
+        <p class="article-text reveal-on-scroll">El problema es que este "colchón" empieza a desgastarse y se ha transformado en el principal destino para los jóvenes que quedan excluidos del sistema formal, consolidando una puerta de entrada al mercado de trabajo donde la inestabilidad es la única garantía.</p>
+
+        <div class="scroll-trigger" id="trigger-2" data-modal="2"></div>
+
+        <h3 class="reveal-on-scroll">Saturación: demasiados trabajadores, poco trabajo</h3>
+
+        <p class="article-text reveal-on-scroll">Un dato clave emerge en 2026: las plataformas ya no logran absorber la creciente demanda laboral. La sobreoferta de trabajadores reduce ingresos, aumenta la competencia y tensiona aún más las condiciones laborales.</p>
+
+        <p class="article-text reveal-on-scroll">Este fenómeno no es casual. Modelos teóricos sobre plataformas muestran que, cuando la cantidad de trabajadores conectados supera la demanda, los ingresos individuales caen y el sistema se vuelve menos sostenible. En otras palabras: cuanto más gente entra a la app buscando trabajo, menos trabajo hay para cada uno.</p>
+
+        <blockquote class="reveal-on-scroll">
+            "En ese bloque de 8 horas que tú agarras con Pedidos Ya, ellos te están asegurando pedidos, mientras que en Rappi la gente se conecta y desconecta. Puede que en una hora no tengas pedidos como puede que tengas un montón."<br><br>
+            <span style="font-size: 0.85rem; color: #666; font-family: 'Space Mono', monospace;">— Testimonio anónimo de repartidor en Argentina.</span>
+        </blockquote>
+
+        <h3 class="reveal-on-scroll">Precarización 2.0</h3>
+
+        <p class="article-text reveal-on-scroll">La precarización laboral no es nueva, pero adopta nuevas formas. Tradicionalmente se vinculaba con contratos inestables, bajos salarios y falta de cobertura social. La uberización agrega una capa adicional:</p>
+
+        <ul class="reveal-on-scroll">
+            <li>El trabajador asume costos (vehículo, combustible, mantenimiento).</li>
+            <li>No hay salario mínimo ni estabilidad.</li>
+            <li>Las reglas pueden cambiar unilateralmente.</li>
+            <li>La evaluación es constante y automatizada.</li>
+        </ul>
+
+        <p class="article-text reveal-on-scroll">Y, quizás lo más relevante: desaparece la dimensión colectiva del trabajo. Sin compañeros, sin sindicato, sin espacio físico compartido, la organización se vuelve más difícil.</p>
+
+        <div class="scroll-trigger" id="trigger-3" data-modal="3"></div>
+
+        <h3 class="reveal-on-scroll">El trabajo como videojuego</h3>
+
+        <p class="article-text reveal-on-scroll">Algunos especialistas describen este modelo como una "gamificación" del trabajo: premios, castigos, niveles, rankings. La lógica no es casual. Las plataformas diseñan sistemas que incentivan a los trabajadores a mantenerse conectados, competir entre sí y aceptar condiciones cada vez menos favorables.</p>
+
+        <blockquote class="reveal-on-scroll">
+            "La plataforma le permite ganar dinero al repartidor a cambio de más esfuerzos: pedalear más rápido, acelerar la moto. Dedicarle más tiempo de vida al reparto."<br><br>
+            <span style="font-size: 0.85rem; color: #666; font-family: 'Space Mono', monospace;">— Análisis sobre precarización digital.</span>
+        </blockquote>
+
+        <p class="article-text reveal-on-scroll">La consecuencia es un trabajador aislado, en relación directa con un algoritmo, sin mediaciones humanas ni negociación posible.</p>
+
+        <h3 class="reveal-on-scroll">El nuevo mapa laboral argentino</h3>
+
+        <p class="article-text reveal-on-scroll">El avance de este modelo no ocurre en el vacío. Se inserta en un contexto de caída del empleo formal y un crecimiento explosivo de la informalidad.</p>
+
+        <p class="article-text reveal-on-scroll"><strong>Según los últimos datos del INDEC de fines de 2025, la informalidad laboral escaló hasta alcanzar al 43% del total de trabajadores en Argentina.</strong> Si bien sectores históricamente en negro como el servicio doméstico (78%), la construcción (73,8%) o el comercio (52,6%) lideran la estadística, la alerta roja está en quiénes absorben el impacto: <strong>los más afectados son los jóvenes.</strong></p>
+
+        <p class="article-text reveal-on-scroll">El resultado es un mercado fragmentado donde el empleo ya no garantiza estabilidad ni ingresos suficientes. De hecho, tener trabajo dejó de ser sinónimo de estar "cubierto". Las aplicaciones digitales prosperan exactamente en esa brecha estructural: operan como la trampa de contención para el 43% de los argentinos que quedaron del lado de afuera, disfrazando de emprendedurismo lo que en realidad es pura necesidad.</p>
+
+        <div class="scroll-trigger" id="trigger-4" data-modal="4"></div>
+
+        <h3 class="reveal-on-scroll">¿Solución o síntoma?</h3>
+
+        <p class="article-text reveal-on-scroll">La uberización suele presentarse como innovación, pero también puede leerse como síntoma: el de un mercado laboral que no logra generar empleo formal suficiente.</p>
+
+        <p class="article-text reveal-on-scroll">Las plataformas no crean necesariamente trabajo nuevo; muchas veces redistribuyen el existente en condiciones más flexibles (y más débiles). La pregunta de fondo ya no es si este modelo llegó para quedarse —todo indica que sí—, sino bajo qué reglas.</p>
+
+        <h3 class="reveal-on-scroll">El debate pendiente</h3>
+
+        <p class="article-text reveal-on-scroll">A nivel global, organismos como la OIT y distintos gobiernos comenzaron a discutir regulaciones que reconozcan derechos laborales en este tipo de plataformas. Las tensiones son claras:</p>
+
+        <ul class="reveal-on-scroll" style="list-style-type: none; padding-left:0;">
+            <li style="border-left: 2px solid var(--accent); padding-left: 15px;">Flexibilidad vs. protección</li>
+            <li style="border-left: 2px solid var(--accent); padding-left: 15px;">Innovación vs. regulación</li>
+            <li style="border-left: 2px solid var(--accent); padding-left: 15px;">Autonomía vs. dependencia encubierta</li>
+        </ul>
+
+        <p class="article-text reveal-on-scroll">En Argentina, ese debate recién empieza a tomar forma, en un contexto donde la urgencia económica suele correr por delante de la legislación.</p>
+
+        <h3 class="reveal-on-scroll">El riesgo de normalizar</h3>
+
+        <p class="article-text reveal-on-scroll">La uberización no es solo un cambio tecnológico; es una transformación cultural del trabajo. Naturaliza la incertidumbre, individualiza el riesgo y redefine qué significa "tener empleo".</p>
+
+        <p class="article-text reveal-on-scroll">El peligro no es que existan estas plataformas, sino que se conviertan en la única opción.</p>
+
+        <p class="article-text reveal-on-scroll">Porque cuando trabajar depende de una app, la pregunta ya no es cuánto ganás, sino cuánto tiempo podés sostenerte conectado.</p>
+
+        <div class="final-section reveal-on-scroll">
+            <h2 class="final-title">El algoritmo nunca pierde.</h2>
+            
+            <div class="logout-widget">
+                <p class="logout-title">>>> REPORTE FINAL DE JORNADA</p>
+                <div class="logout-stat" id="final-earnings">$0</div>
+                <p class="article-text" style="font-size:0.9rem; color:#888; margin-top:-10px; margin-bottom:30px; text-transform: uppercase;">OBJETIVO DE $25.000 FALLIDO.</p>
+                <button class="btn-logout" onclick="desconectarApp()">[ DESCONECTAR SISTEMA ]</button>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // LÓGICA DEL ALGORITMO CAPRICHOSO Y POP-UPS
+        let currentEarnings = 0;
+        let rating = 100;
+        let isAppActive = false;
+        
+        const appBar = document.getElementById('app-bar');
+        const earnDisplay = document.getElementById('metric-earnings');
+        const ratingDisplay = document.getElementById('metric-rating');
+        const consoleDisplay = document.getElementById('app-console');
+        const finalDisplay = document.getElementById('final-earnings');
+        const body = document.body;
+
+        // Formateador de moneda argentina
+        const formatter = new Intl.NumberFormat('es-AR', {
+            style: 'currency', currency: 'ARS', maximumFractionDigits: 0
+        });
+
+        // Control de Popups
+        const triggeredModals = { 1: false, 2: false, 3: false, 4: false };
+
+        // Observer para el contenedor de INSTRUCCIÓN para mostrar la App Bar
+        const initObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !isAppActive) {
+                    isAppActive = true;
+                    appBar.classList.add('active');
+                }
+            });
+        }, { threshold: 0.5 });
+        
+        const simTrigger = document.getElementById('sim-trigger');
+        if(simTrigger) initObserver.observe(simTrigger);
+
+        // Observer para activar los viajes (Pop-ups)
+        const triggerObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const modalId = entry.target.getAttribute('data-modal');
+                    if (!triggeredModals[modalId]) {
+                        triggeredModals[modalId] = true;
+                        showModal(modalId);
+                    }
+                }
+            });
+        }, { rootMargin: '0px 0px -40% 0px', threshold: 0 }); // Dispara cuando llega a un poco más abajo del medio
+
+        document.querySelectorAll('.scroll-trigger').forEach(trigger => triggerObserver.observe(trigger));
+
+        function showModal(id) {
+            const modal = document.getElementById(`modal-${id}`);
+            modal.classList.add('active');
+            body.classList.add('locked'); // Bloquea el scroll de forma agresiva
+        }
+
+        function acceptGig(id, realAmount, consoleMessage) {
+            closeModal(id);
+            
+            // Matemáticas injustas del algoritmo
+            currentEarnings += realAmount;
+            updateMetrics();
+            typeConsole(consoleMessage);
+        }
+
+        function ignoreGig(id) {
+            closeModal(id);
+            
+            // Castigo por rechazar en la app
+            rating -= 15;
+            ratingDisplay.innerText = rating + "%";
+            
+            typeConsole("ALERTA: TASA DE ACEPTACIÓN CAYÓ. RIESGO DE DESCONEXIÓN.");
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(`modal-${id}`);
+            modal.classList.remove('active');
+            body.classList.remove('locked'); // Desbloquea el scroll
+        }
+
+        function updateMetrics() {
+            earnDisplay.innerText = formatter.format(currentEarnings);
+            finalDisplay.innerText = formatter.format(currentEarnings);
+
+            // Cambiar estilo visual si el usuario debe plata
+            if(currentEarnings < 0) {
+                earnDisplay.style.color = "var(--text)";
+                earnDisplay.style.textDecoration = "line-through";
+                earnDisplay.style.textDecorationColor = "var(--accent)";
+            } else {
+                earnDisplay.style.color = "var(--accent)";
+                earnDisplay.style.textDecoration = "none";
+            }
+        }
+
+        function typeConsole(text) {
+            consoleDisplay.innerHTML = ">>> PROCESANDO... <span class='blink'>_</span>";
+            setTimeout(() => {
+                consoleDisplay.innerHTML = `>>> ${text} <span class="blink">_</span>`;
+                // Efecto de flash visual en la barra
+                appBar.style.borderTop = "4px solid var(--accent)";
+                setTimeout(() => { appBar.style.borderTop = "4px solid var(--border)"; }, 200);
+            }, 500);
+        }
+
+        function desconectarApp() {
+            appBar.classList.remove('active');
+            setTimeout(() => {
+                window.scrollTo({top: 0, behavior: 'smooth'});
+                // Reset simulado
+                currentEarnings = 0; rating = 100;
+                updateMetrics();
+                ratingDisplay.innerText = "100%"; 
+                consoleDisplay.innerHTML = ">>> MANTENIENDO CONEXIÓN... <span class='blink'>_</span>";
+                Object.keys(triggeredModals).forEach(k => triggeredModals[k] = false);
+                isAppActive = false;
+            }, 500);
+        }
+
+        // Observer visual estándar para que aparezcan los textos
+        const articleObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                }
+            });
+        }, { root: null, rootMargin: '0px', threshold: 0.15 });
+
+        document.querySelectorAll('.reveal-on-scroll, h3').forEach(el => { articleObserver.observe(el); });
+    </script>
+</body>
+</html>

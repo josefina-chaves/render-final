@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El espejismo de los dólares | RENDER_FINAL</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- ESTILOS BASE RENDER_FINAL --- */
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --accent: #0000FF; 
+            --alarm: #ff0000;
+        }
+
+        ::selection { background: var(--accent); color: #fff; }
+
+        body {
+            background-color: var(--bg); color: var(--text);
+            font-family: 'Space Mono', monospace; margin: 0; padding: 0;
+            line-height: 1.6; overflow-x: hidden;
+        }
+
+        .marquee-container {
+            background: var(--text); color: var(--bg); overflow: hidden; white-space: nowrap;
+            padding: 8px 0; font-size: 0.8rem; text-transform: uppercase; border-bottom: 2px solid var(--accent);
+        }
+        .marquee-content { display: inline-block; animation: marquee 60s linear infinite; }
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-50%, 0); } }
+
+        .site-header {
+            padding: 1rem 5%; border-bottom: 2px solid var(--text); 
+            background: rgba(255,255,255,0.98); z-index: 100; position: sticky; top: 0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.8rem; letter-spacing: -1px; text-decoration: none; color: var(--text); }
+        .blink { animation: blinker 1s linear infinite; color: var(--accent); }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        /* --- FORMATO DE ARTÍCULO --- */
+        .article-container { max-width: 800px; margin: 0 auto; padding: 60px 20px 40px 20px; }
+        .article-header { display: block; text-align: left; margin-bottom: 50px; border-bottom: 4px solid #000; padding-bottom: 40px; position: relative; }
+        .article-title { font-family: 'Archivo', sans-serif; font-size: clamp(3rem, 6vw, 4.5rem); line-height: 0.95; margin: 0 0 25px 0; color: #000; text-transform: uppercase; letter-spacing: -1px;}
+        .article-bajada { font-size: 1.3rem; color: #333; line-height: 1.4; margin-bottom: 30px; font-weight: 400; font-family: 'Space Mono', monospace; }
+        .article-meta { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 1px; display: block; border-top: 1px solid #ddd; padding-top: 15px; }
+        
+        .article-body { font-family: 'Arial', sans-serif; font-size: 1.15rem; line-height: 1.8; color: #111; }
+        .article-body p { margin-bottom: 1.8rem; }
+        .article-body h3 { font-family: 'Archivo', sans-serif; font-size: 1.8rem; text-transform: uppercase; margin: 3rem 0 1.5rem 0; line-height: 1.2; border-bottom: 2px solid #000; display: inline-block; padding-bottom: 5px; }
+        blockquote { font-family: 'Space Mono', monospace; font-size: 1.15rem; line-height: 1.6; border-left: 4px solid var(--accent); margin: 40px 0; padding-left: 20px; color: #111; background: #f9f9f9; padding: 20px;}
+
+        .reveal-on-scroll { opacity: 0; transform: translateY(40px); transition: opacity 0.8s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.8s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .reveal-on-scroll.is-visible { opacity: 1; transform: translateY(0); }
+
+        /* --- WIDGET: EL COLISIONADOR DE REALIDADES (ESTÉTICA LIMPIA RENDER_FINAL) --- */
+        .dual-board-widget {
+            width: 100vw; margin-left: calc(-50vw + 50%); margin-top: 60px; margin-bottom: 60px;
+            background: #fff; border-top: 5px solid #000; border-bottom: 5px solid #000;
+            position: relative; overflow: hidden;
+        }
+
+        .dual-header { padding: 20px 5%; border-bottom: 3px solid #000; display: flex; justify-content: space-between; align-items: center; background: #f4f4f4;}
+        .dual-header h2 { font-family: 'Archivo', sans-serif; font-size: 2rem; margin: 0; text-transform: uppercase; line-height: 1; color: #000;}
+        .dual-header p { font-family: 'Space Mono', monospace; font-size: 0.85rem; margin: 5px 0 0 0; color: #555; text-transform: uppercase; font-weight: bold;}
+
+        .board-container { display: flex; padding: 40px 5%; gap: 30px; flex-wrap: wrap;}
+        
+        .data-column { flex: 1; min-width: 250px; border: 3px solid #000; padding: 25px; background: #fff; box-shadow: 8px 8px 0 var(--accent); transition: box-shadow 0.3s;}
+        .data-title { font-family: 'Space Mono', monospace; font-size: 0.9rem; text-transform: uppercase; font-weight: bold; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 20px; color: #000;}
+        
+        .data-row { margin-bottom: 25px; }
+        .data-row:last-child { margin-bottom: 0; }
+        .data-label { font-size: 0.75rem; text-transform: uppercase; color: #555; display: block; margin-bottom: 5px;}
+        .data-value { font-family: 'Archivo', sans-serif; font-size: 3.5rem; line-height: 1; color: var(--accent); display: block; letter-spacing: -1px; transition: color 0.3s;}
+        .data-sub { font-size: 0.8rem; font-weight: bold; padding: 2px 5px; display: inline-block; background: #eee; color: #000; margin-top: 5px; border: 1px solid #ccc; transition: all 0.3s;}
+
+        /* Consola inferior */
+        .board-console { background: #f9f9f9; padding: 20px 5%; border-top: 3px solid #000; font-family: 'Space Mono', monospace; font-size: 0.9rem; color: #000; font-weight: bold; transition: color 0.3s;}
+        
+        /* El Interruptor Brutalista */
+        .switch-container { position: absolute; top: 20px; right: 5%; display: flex; align-items: center; gap: 15px; z-index: 10;}
+        .switch-label { font-family: 'Space Mono', monospace; font-size: 0.85rem; font-weight: bold; text-transform: uppercase; color: #000;}
+        
+        .brutal-switch {
+            appearance: none; width: 80px; height: 40px; background: #fff; border: 3px solid #000; outline: none; cursor: pointer; position: relative; box-shadow: 4px 4px 0 var(--accent); transition: all 0.3s;
+        }
+        .brutal-switch::before {
+            content: ''; position: absolute; top: 3px; left: 3px; width: 28px; height: 28px; background: var(--accent); transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        
+        /* Estado activado del switch */
+        .brutal-switch:checked { box-shadow: 4px 4px 0 #000; }
+        .brutal-switch:checked::before { left: 43px; background: #000; }
+
+        /* Efecto de glitch mecánico (Sin cambio de colores de fondo) */
+        .glitch-anim { animation: mechanicalShake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes mechanicalShake { 
+            10%, 90% { transform: translate3d(-2px, 0, 0) skew(1deg); } 
+            20%, 80% { transform: translate3d(3px, 0, 0) skew(-1deg); } 
+            30%, 50%, 70% { transform: translate3d(-5px, 0, 0) skew(2deg); } 
+            40%, 60% { transform: translate3d(5px, 0, 0) skew(-2deg); } 
+        }
+
+        .disclaimer-box { background: #f4f4f4; border: 2px dashed #000; padding: 25px; margin-top: 60px; font-size: 0.85rem; font-family: 'Space Mono', monospace; line-height: 1.6; color: #333;}
+
+        @media (max-width: 768px) { 
+            .board-container { flex-direction: column; }
+            .switch-container { position: relative; top: 0; right: 0; padding: 15px 5%; border-bottom: 2px dashed #ccc; justify-content: space-between; background: #fff;}
+        }
+
+        /* --- FOOTER --- */
+        footer { padding: 30px 5%; border-top: 2px solid var(--text); display: flex; justify-content: space-between; font-size: 0.75rem; background: #f9f9f9; margin-top: 50px;}
+    </style>
+</head>
+<body>
+
+    <div class="marquee-container">
+        <div class="marquee-content">
+            RENDER_FINAL_ [v.2.0.26] /// PERIODISMO DE DATOS Y NARRATIVAS VISUALES /// LA VERDAD ESTÁ EN EL ARCHIVO /// PROCESANDO SEÑAL /// RENDER_FINAL_ [v.2.0.26] /// PERIODISMO DE DATOS Y NARRATIVAS VISUALES /// LA VERDAD ESTÁ EN EL ARCHIVO /// PROCESANDO SEÑAL /// 
+        </div>
+    </div>
+    <header class="site-header">
+        <a href="#" class="logo">RENDER_FINAL<span class="blink">_</span></a>
+    </header>
+
+    <main class="article-container" style="padding-bottom: 0;">
+        
+        <header class="article-header reveal-on-scroll">
+            <h1 class="article-title">El espejismo de los dólares</h1>
+            <p class="article-bajada">Los últimos datos oficiales enviados al FMI exponen la fractura total del país. Récord de reservas y exportaciones conviven con el colapso manufacturero y una deuda externa asfixiante.</p>
+            <span class="article-meta">:: MACROECONOMÍA | POR REDACCIÓN RENDER | 19.03.26</span>
+        </header>
+
+        <div class="article-body">
+            
+            <p class="reveal-on-scroll">Existe una hoja de cálculo pública, cruda y sin narrativa política donde el Estado Nacional se confiesa ante el mundo. Es la <em>National Summary Data Page (NSDP)</em>, el tablero de estándares especiales de diseminación de datos que el INDEC envía religiosamente al Fondo Monetario Internacional.</p>
+
+            <p class="reveal-on-scroll">Al cruzar las variables de la última actualización (inicios de 2026), el documento revela un país esquizofrénico. Si se mira exclusivamente el Sector Externo, la economía es un éxito rotundo. Pero si se audita el Sector Real, la economía doméstica se está apagando. La verdad de la economía argentina depende, literalmente, de qué interruptor se encienda.</p>
+
+        </div>
+    </main>
+
+    <div class="dual-board-widget reveal-on-scroll" id="widget-colisionador">
+        
+        <div class="switch-container">
+            <span class="switch-label" id="switchText" style="color: var(--accent);">[ SECTOR EXTERNO ]</span>
+            <input type="checkbox" class="brutal-switch" id="macroSwitch" onchange="toggleBoard()">
+        </div>
+
+        <div class="dual-header">
+            <div>
+                <h2 id="boardTitle">Matriz de Exportación</h2>
+                <p id="boardDesc">>>> LECTURA OFICIAL (DATOS NSDP - FMI)</p>
+            </div>
+        </div>
+
+        <div class="board-container" id="boardContent">
+            <div class="data-column" id="col1-box">
+                <div class="data-title" id="col1-title">INDICADORES COMERCIALES</div>
+                
+                <div class="data-row">
+                    <span class="data-label" id="l1-name">EXPORTACIONES (FOB)</span>
+                    <span class="data-value" id="l1-val">+19.3%</span>
+                    <span class="data-sub" id="l1-sub">US$ 7.057 Millones</span>
+                </div>
+                
+                <div class="data-row">
+                    <span class="data-label" id="l2-name">RESERVAS INTERNACIONALES</span>
+                    <span class="data-value" id="l2-val">+63.7%</span>
+                    <span class="data-sub" id="l2-sub">US$ 46.635 Millones</span>
+                </div>
+            </div>
+
+            <div class="data-column" id="col2-box">
+                <div class="data-title" id="col2-title">PROYECCIÓN DE CRECIMIENTO</div>
+                
+                <div class="data-row">
+                    <span class="data-label" id="l3-name">PRODUCTO BRUTO INTERNO (PBI)</span>
+                    <span class="data-value" id="l3-val">+3.3%</span>
+                    <span class="data-sub" id="l3-sub">A precios constantes</span>
+                </div>
+
+                <div class="data-row">
+                    <span class="data-label" id="l4-name">IMPORTACIONES (CIF)</span>
+                    <span class="data-value" style="color: #111;" id="l4-val">-11.9%</span>
+                    <span class="data-sub" id="l4-sub">Contracción de salida de divisas</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="board-console" id="boardConsole">
+            >>> SISTEMA ESTABLE. ACUMULACIÓN DE DIVISAS ACTIVA. SUPERÁVIT COMERCIAL CONFIRMADO. <span class="blink">_</span>
+        </div>
+    </div>
+
+    <main class="article-container" style="padding-top: 0;">
+        <div class="article-body">
+            
+            <h3 class="reveal-on-scroll">El tablero oficial (Modo Macro)</h3>
+
+            <p class="reveal-on-scroll">Cuando la mirada se posa sobre la planilla del Sector Externo, los números justifican el optimismo gubernamental. Las exportaciones registraron un salto formidable del <strong>19,3%</strong> interanual, traccionando ingresos por más de 7 mil millones de dólares en un solo mes. </p>
+
+            <p class="reveal-on-scroll">Al mismo tiempo, la asfixia del mercado interno provocó que las importaciones se desplomaran un 11,9%. Este "cepo de facto" por recesión permitió que el Banco Central reconstruyera su posición, disparando las Reservas Internacionales un 63,7%. Financieramente, la macroeconomía está blindada.</p>
+
+            <h3 class="reveal-on-scroll">La verdad de la calle (Modo Micro)</h3>
+
+            <p class="reveal-on-scroll">Pero la economía real no cobra en dólares FOB ni opera en Wall Street. Al activar la lectura del Sector Real en la misma base de datos, el espejismo se derrumba. </p>
+
+            <blockquote class="reveal-on-scroll">
+                Mientras las exportaciones primarias vuelan un 19%, el Índice de Producción Industrial (Manufactura) cae un -3,9%. El país primariza sus ingresos mientras apaga sus fábricas.
+            </blockquote>
+
+            <p class="reveal-on-scroll">El rebote general del PBI (+3,3%) está apalancado exclusivamente por sectores extractivos como la minería, que saltó un extraordinario 10,3%. Sin embargo, la minería no emplea masivamente a la población de los grandes conurbanos. La industria manufacturera y la pesca, grandes dadores de trabajo formal, operan en rojo crónico (-3,9% y -20,2% respectivamente).</p>
+
+            <p class="reveal-on-scroll">A esto se suma la herida estructural más profunda: la Deuda Externa Total. A pesar de la acumulación de reservas, el pasivo externo del país (sumando sector público y privado) trepó un 12,3%, clavando el reloj en <strong>US$ 316.935 millones</strong>.</p>
+
+            <p class="reveal-on-scroll">El modelo logró lo que parecía imposible: generar riqueza a nivel macro y recesión a nivel micro en simultáneo. Un país donde sobran los dólares para el Banco Central, pero faltan los pesos para encender las máquinas.</p>
+            
+            <div class="disclaimer-box reveal-on-scroll">
+                <strong>ACLARACIÓN DE FUENTES<span class="blink">_</span></strong><br><br>
+                Todos los datos, porcentajes y valores expresados en esta publicación (tanto en el módulo interactivo como en el cuerpo del texto) fueron extraídos de forma directa de la "National Summary Data Page (NSDP) - Economic and Financial Data for Argentina", publicada oficialmente por el INDEC bajo los estándares del Fondo Monetario Internacional. Última fecha de corte de datos procesada: inicios de 2026.
+            </div>
+
+        </div>
+    </main>
+
+    <footer>
+        <div><strong>CONTACTO:</strong> editorial@renderfinal.com</div>
+        <div>&copy; 2026 RENDER_FINAL. Todos los derechos reservados.</div>
+    </footer>
+
+    <script>
+        // --- LÓGICA DEL COLISIONADOR DE REALIDADES ---
+        const widget = document.getElementById('widget-colisionador');
+        const boardTitle = document.getElementById('boardTitle');
+        const boardDesc = document.getElementById('boardDesc');
+        const boardConsole = document.getElementById('boardConsole');
+        const switchText = document.getElementById('switchText');
+        const col1Box = document.getElementById('col1-box');
+        const col2Box = document.getElementById('col2-box');
+
+        // Textos Dinámicos
+        const l1_name = document.getElementById('l1-name'); const l1_val = document.getElementById('l1-val'); const l1_sub = document.getElementById('l1-sub');
+        const l2_name = document.getElementById('l2-name'); const l2_val = document.getElementById('l2-val'); const l2_sub = document.getElementById('l2-sub');
+        const l3_name = document.getElementById('l3-name'); const l3_val = document.getElementById('l3-val'); const l3_sub = document.getElementById('l3-sub');
+        const l4_name = document.getElementById('l4-name'); const l4_val = document.getElementById('l4-val'); const l4_sub = document.getElementById('l4-sub');
+
+        function toggleBoard() {
+            const isMicro = document.getElementById('macroSwitch').checked;
+
+            // Disparar Animación Mecánica
+            widget.classList.remove('glitch-anim');
+            void widget.offsetWidth; 
+            widget.classList.add('glitch-anim');
+
+            if (isMicro) {
+                // CAMBIO A MODO MICRO (Datos de la calle)
+                switchText.innerText = "[ ECONOMÍA REAL ]";
+                switchText.style.color = "#000";
+                
+                // Cambiar sombra de las cajas a negro para endurecer el diseño
+                col1Box.style.boxShadow = "8px 8px 0 #000";
+                col2Box.style.boxShadow = "8px 8px 0 #000";
+                
+                setTimeout(() => {
+                    boardTitle.innerText = "Matriz de Recesión";
+                    boardDesc.innerText = ">>> LECTURA DOMÉSTICA (DATOS NSDP - SECTOR REAL)";
+                    
+                    document.getElementById('col1-title').innerText = "COLAPSO INDUSTRIAL";
+                    l1_name.innerText = "PRODUCCIÓN MANUFACTURERA"; 
+                    l1_val.innerText = "-3.9%"; 
+                    l1_val.style.color = "var(--alarm)"; // El rojo solo va en el dato negativo
+                    l1_sub.innerText = "Índice de Producción Industrial";
+                    l1_sub.style.background = "var(--alarm)";
+                    l1_sub.style.color = "#fff";
+                    l1_sub.style.borderColor = "var(--alarm)";
+
+                    l2_name.innerText = "ACTIVIDAD PESQUERA"; 
+                    l2_val.innerText = "-20.2%"; 
+                    l2_val.style.color = "var(--alarm)";
+                    l2_sub.innerText = "Caída a precios constantes";
+                    l2_sub.style.background = "var(--alarm)";
+                    l2_sub.style.color = "#fff";
+                    l2_sub.style.borderColor = "var(--alarm)";
+                    
+                    document.getElementById('col2-title').innerText = "ASFIXIA ESTRUCTURAL";
+                    l3_name.innerText = "DEUDA EXTERNA TOTAL"; 
+                    l3_val.innerText = "+12.3%"; 
+                    l3_val.style.color = "var(--alarm)";
+                    l3_sub.innerText = "US$ 316.935 Millones";
+                    l3_sub.style.background = "#000";
+                    l3_sub.style.color = "#fff";
+                    l3_sub.style.borderColor = "#000";
+
+                    l4_name.innerText = "DESEMPLEO NACIONAL"; 
+                    l4_val.innerText = "7.5%"; 
+                    l4_val.style.color = "var(--alarm)"; 
+                    l4_sub.innerText = "1.6 millones de personas"; 
+                    l4_sub.style.background = "#000"; 
+                    l4_sub.style.color = "#fff";
+
+                    boardConsole.style.color = "var(--alarm)";
+                    boardConsole.innerHTML = ">>> ALERTA: DESTRUCCIÓN MANUFACTURERA DETECTADA. CRECIMIENTO EXCLUYENTE. <span class='blink'>_</span>";
+                }, 150);
+
+            } else {
+                // CAMBIO A MODO MACRO (Datos oficiales/FMI)
+                switchText.innerText = "[ SECTOR EXTERNO ]";
+                switchText.style.color = "var(--accent)";
+
+                col1Box.style.boxShadow = "8px 8px 0 var(--accent)";
+                col2Box.style.boxShadow = "8px 8px 0 var(--accent)";
+
+                setTimeout(() => {
+                    boardTitle.innerText = "Matriz de Exportación";
+                    boardDesc.innerText = ">>> LECTURA OFICIAL (DATOS NSDP - FMI)";
+                    
+                    document.getElementById('col1-title').innerText = "INDICADORES COMERCIALES";
+                    l1_name.innerText = "EXPORTACIONES (FOB)"; 
+                    l1_val.innerText = "+19.3%"; 
+                    l1_val.style.color = "var(--accent)";
+                    l1_sub.innerText = "US$ 7.057 Millones";
+                    l1_sub.style.background = "#eee";
+                    l1_sub.style.color = "#000";
+                    l1_sub.style.borderColor = "#ccc";
+
+                    l2_name.innerText = "RESERVAS INTERNACIONALES"; 
+                    l2_val.innerText = "+63.7%"; 
+                    l2_val.style.color = "var(--accent)";
+                    l2_sub.innerText = "US$ 46.635 Millones";
+                    l2_sub.style.background = "#eee";
+                    l2_sub.style.color = "#000";
+                    l2_sub.style.borderColor = "#ccc";
+                    
+                    document.getElementById('col2-title').innerText = "PROYECCIÓN DE CRECIMIENTO";
+                    l3_name.innerText = "PRODUCTO BRUTO INTERNO (PBI)"; 
+                    l3_val.innerText = "+3.3%"; 
+                    l3_val.style.color = "var(--accent)";
+                    l3_sub.innerText = "A precios constantes";
+                    l3_sub.style.background = "#eee";
+                    l3_sub.style.color = "#000";
+                    l3_sub.style.borderColor = "#ccc";
+
+                    l4_name.innerText = "IMPORTACIONES (CIF)"; 
+                    l4_val.innerText = "-11.9%"; 
+                    l4_val.style.color = "#111"; 
+                    l4_sub.innerText = "Contracción de salida de divisas"; 
+                    l4_sub.style.background = "#ccc"; 
+                    l4_sub.style.color = "#000";
+
+                    boardConsole.style.color = "#000";
+                    boardConsole.innerHTML = ">>> SISTEMA ESTABLE. ACUMULACIÓN DE DIVISAS ACTIVA. SUPERÁVIT COMERCIAL CONFIRMADO. <span class='blink'>_</span>";
+                }, 150);
+            }
+        }
+
+        // --- OBSERVER DE SCROLL CON ANIMACIÓN TRANSLATE-Y ---
+        const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
+        const articleObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal-on-scroll').forEach(el => { articleObserver.observe(el); });
+    </script>
+</body>
+</html>

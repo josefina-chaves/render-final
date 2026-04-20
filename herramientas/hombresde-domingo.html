@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hombres de Domingo | RENDER_FINAL</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css">
+
+    <style>
+        /* --- ESTILOS BASE RENDER_FINAL --- */
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --accent: #0000FF; 
+            --surface: #f4f4f4;
+            --border: #000000;
+            --muted: #cccccc;
+        }
+
+        ::selection { background: var(--accent); color: #fff; }
+
+        body {
+            background-color: var(--bg); color: var(--text);
+            font-family: 'Space Mono', monospace; margin: 0; padding: 0;
+            line-height: 1.6; overflow-x: hidden;
+        }
+
+        .blink { animation: blinker 1s linear infinite; color: var(--accent); }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        /* --- MARQUESINA SUPERIOR --- */
+        .marquee-container {
+            background: var(--surface); color: var(--border); overflow: hidden; white-space: nowrap;
+            padding: 8px 0; font-size: 0.8rem; text-transform: uppercase; border-bottom: 2px solid var(--border);
+        }
+        .marquee-content { display: inline-block; animation: marquee 60s linear infinite; }
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-50%, 0); } }
+
+        /* --- HEADER SITE --- */
+        .site-header {
+            padding: 1rem 5%; border-bottom: 2px solid var(--border); 
+            background: var(--bg); z-index: 9999; position: sticky; top: 0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.8rem; letter-spacing: -1px; text-decoration: none; color: var(--border); }
+
+        /* --- CONTENEDOR DE LECTURA --- */
+        .article-container { max-width: 720px; margin: 0 auto; padding: 60px 20px; box-sizing: border-box;}
+        
+        .article-header { margin-bottom: 50px; border-bottom: 4px solid var(--border); padding-bottom: 40px; }
+        .article-title { font-family: 'Archivo', sans-serif; font-size: clamp(3rem, 7vw, 5rem); line-height: 0.9; margin: 0 0 20px 0; color: var(--border); text-transform: uppercase; letter-spacing: -2px;}
+        .article-bajada { font-size: 1.25rem; color: #333; line-height: 1.5; margin-bottom: 30px; font-weight: 400; }
+        .article-meta { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; display: block; border-top: 1px solid var(--muted); padding-top: 15px; margin-top: 30px; font-weight: bold;}
+
+        .article-text { font-size: 1.15rem; line-height: 1.8; margin-bottom: 30px; }
+        .article-text strong { color: var(--accent); }
+        
+        h3 { font-family: 'Archivo', sans-serif; font-size: 2rem; text-transform: uppercase; margin: 4rem 0 1.5rem 0; line-height: 1.2; border-bottom: 2px solid var(--border); display: inline-block; padding-bottom: 5px; }
+
+        blockquote { font-family: 'Space Mono', monospace; font-size: 1.15rem; line-height: 1.6; border-left: 4px solid var(--accent); margin: 40px 0; padding-left: 20px; color: #111; background: var(--surface); padding: 20px;}
+
+        /* --- SISTEMA SCROLLYTELLING DEL MAPA NATIVO --- */
+        #map-scrolly-container { position: relative; width: 100vw; margin-left: calc(-50vw + 50%); background: var(--surface); border-top: 4px solid var(--border); border-bottom: 4px solid var(--border); margin-top: 80px; margin-bottom: 80px; }
+        
+        #sticky-map-wrapper { position: sticky; top: 0; height: 100vh; width: 100%; z-index: 1; border-bottom: 4px solid var(--border); box-sizing: border-box; }
+        
+        #map { height: 100%; width: 100%; background: #e0e0e0; } 
+        /* Filtro para apagar los colores base de leaflet y dejarlo estilo RENDER */
+        .leaflet-layer { filter: grayscale(100%) contrast(1.1) brightness(1.1); }
+
+        #steps-wrapper { position: relative; z-index: 10; margin-top: -100vh; padding-bottom: 20vh; pointer-events: none; }
+        
+        .map-step { min-height: 100vh; display: flex; align-items: center; justify-content: flex-end; padding: 0 10%; max-width: 1200px; margin: 0 auto;}
+        .map-step.spacer { min-height: 40vh; }
+        
+        /* Tarjetas Brutalistas sobre el mapa */
+        .map-card { 
+            background: var(--bg); border: 4px solid var(--border); box-shadow: 12px 12px 0 var(--border); 
+            padding: 30px; max-width: 400px; width: 100%; pointer-events: auto;
+            opacity: 0.3; transform: translateX(50px); transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+            font-family: 'Space Mono', monospace; font-size: 0.95rem; line-height: 1.5;
+        }
+        .map-step.is-active .map-card { opacity: 1; transform: translateX(0); }
+        .map-card h4 { font-family: 'Archivo', sans-serif; color: var(--accent); font-size: 1.8rem; margin: 0 0 15px 0; text-transform: uppercase; line-height: 1;}
+        .map-card p { margin-bottom: 15px; }
+        
+        /* Stats gigantes en la tarjeta */
+        .map-card .big-stat { display: block; font-family: 'Archivo', sans-serif; font-size: 4rem; color: var(--accent); line-height: 1; border-top: 2px dashed var(--muted); padding-top: 15px; margin-top: 20px;}
+        .map-card .stat-label { font-size: 0.75rem; text-transform: uppercase; color: #666; font-weight: bold; }
+
+        /* --- GRILLA DE TIPOLOGÍAS BRUTALISTA --- */
+        .types-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 40px 0; }
+        .type-card { border: 2px solid var(--border); padding: 25px; background: #fff; transition: transform 0.2s;}
+        .type-card:hover { transform: translateY(-5px); box-shadow: 4px 4px 0 var(--accent); border-color: var(--accent);}
+        .type-card h4 { font-family: 'Archivo', sans-serif; font-size: 1.3rem; text-transform: uppercase; margin: 0 0 15px 0; color: var(--border);}
+        .type-card p { font-size: 0.95rem; margin: 0; }
+
+        /* --- ESTILOS DE SCROLL REVEAL --- */
+        .reveal-on-scroll { opacity: 0; transform: translateY(40px); transition: all 0.8s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .reveal-on-scroll.is-visible { opacity: 1; transform: translateY(0); }
+
+        /* Botón final */
+        .btn-action { display: block; text-align: center; background: var(--bg); color: var(--accent); border: 2px solid var(--accent); padding: 20px; font-family: 'Space Mono', monospace; font-weight: bold; cursor: pointer; text-transform: uppercase; text-decoration: none; transition: all 0.2s; margin: 40px 0;}
+        .btn-action:hover { background: var(--accent); color: var(--bg); }
+
+        /* Tooltip de Leaflet customizado a RENDER */
+        .mi-tooltip { background: var(--border); color: #fff; border: none; border-radius: 0; font-family: 'Space Mono', monospace; font-size: 0.8rem; padding: 10px; text-transform: uppercase; box-shadow: 4px 4px 0 var(--accent);}
+        .leaflet-tooltip-top:before { border-top-color: var(--border); }
+
+        @media (max-width: 900px) {
+            .map-step { justify-content: center; padding: 0 5%; }
+            .types-grid { grid-template-columns: 1fr; }
+            .map-card { max-width: 100%; box-shadow: 6px 6px 0 var(--border); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="marquee-container">
+        <div class="marquee-content">
+            RENDER_FINAL_ [v.2.0.26] /// PERIODISMO DE DATOS /// ENTRE RÍOS, ARGENTINA /// ANÁLISIS DEMOGRÁFICO /// RENDER_FINAL_ [v.2.0.26] /// PERIODISMO DE DATOS /// ENTRE RÍOS, ARGENTINA /// ANÁLISIS DEMOGRÁFICO /// 
+        </div>
+    </div>
+    
+    <header class="site-header">
+        <a href="#" class="logo">RENDER_FINAL<span class="blink">_</span></a>
+    </header>
+
+    <main class="article-container">
+        
+        <header class="article-header">
+            <h1 class="article-title">Hombres<br>de Domingo</h1>
+            <p class="article-bajada">El silencio estadístico en la provincia de Entre Ríos. Una radiografía de datos sobre la salud mental, el aislamiento y el peso de la masculinidad estructural.</p>
+            <span class="article-meta">:: INVESTIGACIÓN DE DATOS | POR [TU NOMBRE] | 25.03.26</span>
+        </header>
+
+        <p class="article-text reveal-on-scroll">El sábado a la noche fue como cualquier otro. La previa en una casa, el viaje al boliche, las historias de Instagram y el reggaetón de fondo. Agustín y "El Colo" se rieron de las mismas pavadas de siempre, brindaron y hasta planearon las vacaciones de verano. "Mañana sale fútbol", dijeron al despedirse. El Colo estaba ahí, eufórico, vital. No había grietas visibles, ni despedidas raras, ni un solo indicio de que esa sería la última noche.</p>
+        
+        <p class="article-text reveal-on-scroll">El domingo amaneció con ese sol clásico de Colón que invita a ir al río. Agustín se levantó pasado el mediodía, con el olor a asado invadiendo la casa y el celular en la mano. Abrió el grupo de WhatsApp "Fulbito" para confirmar la canchita de la costanera.</p>
+        
+        <blockquote class="reveal-on-scroll">
+            "¿Quién prende hoy?", escribió. Empezaron a caer los confirmados. Uno, dos, tres. Faltaba uno. Agustín arrobó al Colo. "Dale, loco, nos falta uno".
+        </blockquote>
+
+        <p class="article-text reveal-on-scroll">El mensaje quedó con un solo tilde gris. Pasaron diez minutos. Veinte. De repente, el teléfono de Agustín sonó, pero no era un mensaje del grupo. Era una llamada. <strong>Del otro lado, una voz quebrada le contó lo imposible.</strong></p>
+        
+        <p class="article-text reveal-on-scroll">El fútbol se suspendió. El almuerzo se atragantó. Y en la cabeza de Agustín y sus amigos, la misma pregunta empezó a rebotar sin respuesta: "¿Cómo no nos dimos cuenta, si anoche estaba riéndose con nosotros?". En Colón, el domingo seguía brillando afuera, pero para ellos, el mundo se acababa de apagar.</p>
+
+    </main> <div id="map-scrolly-container">
+        
+        <div id="sticky-map-wrapper">
+            <div id="map"></div>
+        </div>
+        
+        <div id="steps-wrapper">
+            
+            <div class="map-step" data-step="argentina" data-lat="-38" data-lng="-64" data-zoom="4">
+                <div class="map-card">
+                    <h4>El contexto nacional</h4>
+                    <p>En Argentina, la tasa de suicidios muestra una curva preocupante y una brecha de género histórica. Pero el promedio esconde realidades locales extremas.</p>
+                </div>
+            </div>
+
+            <div class="map-step" data-step="entrerios" data-lat="-32" data-lng="-59" data-zoom="7">
+                <div class="map-card">
+                    <h4>Entre Ríos</h4>
+                    <p>La provincia duplica la tasa nacional en varios departamentos. Históricamente, la zona centro lideraba las estadísticas. Pero el mapa de calor ha comenzado a desplazarse peligrosamente hacia la costa del Río Uruguay.</p>
+                </div>
+            </div>
+
+            <div class="map-step" data-step="colon" data-lat="-31.90" data-lng="-58.30" data-zoom="9">
+                <div class="map-card" style="border-color: var(--accent);">
+                    <h4 style="color: var(--border);">Alerta en Colón</h4>
+                    <p>Aquí se rompió la estadística. No es un aumento gradual, es un estallido de letalidad masculina.</p>
+                    <span class="big-stat">+465%</span>
+                    <span class="stat-label">Aumento registrado en solo 4 años</span>
+                </div>
+            </div>
+
+            <div class="map-step" data-step="comparar" data-lat="-32.10" data-lng="-59.00" data-zoom="8">
+                <div class="map-card">
+                    <h4>Dos geografías, dos dolores</h4>
+                    <p><strong>Depto. Nogoyá (Gris):</strong> Crisis estructural. Economía rígida, migración forzada. El malestar se acumula durante años. Dolor naturalizado.</p>
+                    <p><strong>Depto. Colón (Azul):</strong> Crisis acelerada. Crecimiento urbano, turismo, industrias de alta exigencia física. El sistema no se deteriora lentamente, se satura de golpe.</p>
+                </div>
+            </div>
+
+            <div class="map-step spacer"></div>
+        </div>
+    </div>
+
+    <main class="article-container">
+
+        <h3 class="reveal-on-scroll">La anatomía del silencio</h3>
+        <p class="article-text reveal-on-scroll">Durante años, el Departamento Nogoyá funcionó como el punto más alto del riesgo suicida en Entre Ríos. Esa referencia dejó de servir. Lo que los datos muestran es un ascenso vertical: en solo cuatro años, la tasa de mortalidad masculina en Colón alcanzó un pico de <strong>36.69 suicidios masculinos cada 100 mil habitantes</strong>.</p>
+        
+        <p class="article-text reveal-on-scroll">Hoy, un varón en el Departamento Colón enfrenta un riesgo cinco veces mayor que el promedio nacional. Ese "36.69" no es solo una cifra epidemiológica. Es el mensaje que Agustín nunca recibió. Es la silla vacía en el asado.</p>
+
+        <blockquote class="reveal-on-scroll">
+            "No vimos venir la ola, y cuando llegó, no teníamos salvavidas."<br>
+            <span style="font-size: 0.8rem; color: #888; text-transform: uppercase;">— Ps. Luciano Pagani, Hospital San Benjamín</span>
+        </blockquote>
+
+        <h3 class="reveal-on-scroll">Las Causas Ocultas</h3>
+        
+        <div class="types-grid reveal-on-scroll">
+            <div class="type-card">
+                <h4>Deshumanización laboral</h4>
+                <p>El horario de entrada en frigoríficos o fábricas es a las 2 AM y los pibes salen rotos. Ese ritmo a contramano carcome la vida social. El cuerpo aguanta, pero la cabeza se aísla en una rutina mecánica.</p>
+            </div>
+            <div class="type-card">
+                <h4>La trampa digital</h4>
+                <p>La desesperación entra por el celular: pibes endeudados en casinos virtuales, apostando lo que no tienen. La presión por ganar dinero y la falta de horizonte genera una ansiedad galopante invisible.</p>
+            </div>
+        </div>
+
+        <h3 class="reveal-on-scroll">Tipologías del Dolor</h3>
+        
+        <div class="types-grid reveal-on-scroll">
+            <div class="type-card" style="border-color: var(--border);">
+                <h4 style="color: var(--accent);">El plan meticuloso</h4>
+                <p>Personas que planifican su final con una frialdad que asusta. No dan señales. "Nadie lo vio venir" porque la decisión ya estaba tomada en absoluto silencio.</p>
+            </div>
+            <div class="type-card" style="border-color: var(--border);">
+                <h4 style="color: var(--accent);">Estallido por agotamiento</h4>
+                <p>Es el acto impulsivo. El pibe quemado por la presión. No es que quieran morir, es que no aguantan más vivir así. Es un burnout de la vida misma.</p>
+            </div>
+        </div>
+
+        <h3 class="reveal-on-scroll">Otra forma de ser</h3>
+        <p class="article-text reveal-on-scroll">"Hombre es tener, precisamente, la fuerza y la ternura para hacerse cargo de una vida deseante y vital. Eso, ahí se comienza." - Ps. Juan Pablo Lienlaff.</p>
+        <p class="article-text reveal-on-scroll" style="font-family: 'Archivo', sans-serif; font-size: 1.5rem; text-align: center; text-transform: uppercase; margin: 60px 0;">Para que el próximo domingo, en el grupo de "Fulbito", estén todos los que tienen que estar.</p>
+
+        <a href="tel:135" class="btn-action reveal-on-scroll">[ BUSCÁ AYUDA: LLAMÁ AL 135 ]</a>
+
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="mapa.js"></script>
+
+    <script>
+        // --- OBSERVER DE TEXTOS ---
+        const observerTexts = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                }
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal-on-scroll').forEach(el => observerTexts.observe(el));
+
+        // --- INICIALIZACIÓN DEL MAPA (Basado en tu script.js) ---
+        const isMobile = window.innerWidth < 800;
+        
+        const map = L.map('map', {
+            zoomControl: false, // Quitamos controles para estética limpia
+            scrollWheelZoom: false,
+            doubleClickZoom: false,
+            dragging: false, // Bloqueamos el arrastre para no interrumpir el scroll
+            zoomSnap: 0.25
+        }).setView([-38, -60], 4);
+
+        // CartoDB Light (Limpio y claro para que resalten nuestros colores)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+            attribution: '© RENDER_FINAL'
+        }).addTo(map);
+
+        let layerArgentina = null;
+        let layerEntreRios = null;
+        let layerColon = null;
+        let layerNogoya = null;
+
+        // Estilos Brutalistas RENDER_FINAL
+        function obtenerEstilo(nombre) {
+            if (nombre === 'Argentina') return { color: "#000000", weight: 1, fillOpacity: 0.03 };
+            if (nombre === 'EntreRios') return { color: "#000000", weight: 2, fillOpacity: 0.1 };
+            if (nombre === 'Colon') return { color: "#000000", fillColor: "#0000FF", weight: 2, fillOpacity: 0.8 }; // Azul RENDER
+            if (nombre === 'Nogoya') return { color: "#000000", fillColor: "#666666", weight: 2, fillOpacity: 0.6 }; // Gris
+            return { color: "#333" };
+        }
+
+        const infoTooltips = {
+            "Colon": "<strong>COLÓN</strong><br>Tasa: 36.69",
+            "Nogoya": "<strong>NOGOYÁ</strong><br>Tasa: 20.49"
+        };
+
+        function procesarDatos() {
+            // Verifica si mapa.js cargó la variable mapaGeo
+            if (typeof mapaGeo === 'undefined') {
+                console.log("Esperando mapaGeo...");
+                setTimeout(procesarDatos, 100);
+                return;
+            }
+
+            L.geoJSON(mapaGeo, {
+                style: function(feature) {
+                    return obtenerEstilo(feature.properties.name);
+                },
+                onEachFeature: function(feature, layer) {
+                    const nombre = feature.properties.name;
+                    
+                    if (nombre === "Argentina") { layerArgentina = layer; layerArgentina.addTo(map); }
+                    if (nombre === "EntreRios") { layerEntreRios = layer; }
+                    if (nombre === "Colon") { layerColon = layer; }
+                    if (nombre === "Nogoya") { layerNogoya = layer; }
+
+                    if (infoTooltips[nombre]) {
+                        layer.bindTooltip(infoTooltips[nombre], {
+                            direction: "top",
+                            className: "mi-tooltip",
+                            opacity: 1
+                        });
+                    }
+                }
+            });
+
+            iniciarScrollObserverMap();
+        }
+
+        // --- SCROLLYTELLING DEL MAPA ---
+        function iniciarScrollObserverMap() {
+            const mapSteps = document.querySelectorAll('.map-step');
+            
+            const observerMap = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        
+                        // Resaltar tarjeta
+                        mapSteps.forEach(s => s.classList.remove('is-active'));
+                        entry.target.classList.add('is-active');
+
+                        const stepId = entry.target.dataset.step;
+                        const lat = parseFloat(entry.target.dataset.lat);
+                        const lng = parseFloat(entry.target.dataset.lng);
+                        const zoom = parseFloat(entry.target.dataset.zoom);
+
+                        // Vuelo de cámara
+                        if(lat && lng && zoom) {
+                            map.flyTo([lat, lng], isMobile ? zoom - 1 : zoom, { duration: 1.5 });
+                        }
+
+                        // Lógica de Capas según el paso
+                        if (stepId === 'argentina') {
+                            if(layerEntreRios) map.removeLayer(layerEntreRios);
+                            if(layerColon) map.removeLayer(layerColon);
+                            if(layerNogoya) map.removeLayer(layerNogoya);
+                        }
+                        else if (stepId === 'entrerios') {
+                            if(layerEntreRios) layerEntreRios.addTo(map);
+                            if(layerColon) map.removeLayer(layerColon);
+                            if(layerNogoya) map.removeLayer(layerNogoya);
+                        }
+                        else if (stepId === 'colon') {
+                            if(layerEntreRios) layerEntreRios.addTo(map);
+                            if(layerColon) layerColon.addTo(map);
+                            if(layerNogoya) map.removeLayer(layerNogoya);
+                        }
+                        else if (stepId === 'comparar') {
+                            if(layerEntreRios) layerEntreRios.addTo(map);
+                            if(layerColon) layerColon.addTo(map);
+                            if(layerNogoya) layerNogoya.addTo(map);
+                        }
+                    }
+                });
+            }, { threshold: 0.5 }); // Dispara cuando la tarjeta está a la mitad de la pantalla
+
+            mapSteps.forEach(step => observerMap.observe(step));
+        }
+
+        // Arrancamos el script
+        procesarDatos();
+
+    </script>
+</body>
+</html>

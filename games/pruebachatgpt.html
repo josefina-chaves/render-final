@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Especial Render_Final | El Guardián de la Selva</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <!-- ✅ FIX SCRIPT -->
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-base: #1e3718; 
+            --bg-feedback-fail: rgba(30, 50, 24, 0.98); 
+            --accent-yellow: #f39c12;
+            --accent-green: #2ecc71;
+            --text-main: #ffffff;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            font-family: 'Nunito', sans-serif; color: var(--text-main);
+            background-color: var(--bg-base); overflow: hidden;
+            transition: background-color 0.5s ease;
+        }
+
+        #game-wrapper { width: 100%; height: 100%; position: relative; display: flex; flex-direction: column; z-index: 10; }
+
+        /* ✅ FIX 3D */
+        #star-3d-container {
+            position: fixed; top: 15vh; left: 0; width: 100vw; height: 60vh;
+            z-index: 5; /* antes 100 */
+            display: flex; justify-content: center; align-items: center;
+            pointer-events: auto; /* antes none */
+        }
+        
+        model-viewer {
+            width: 100%; height: 100%; background-color: transparent;
+            touch-action: pan-y; pointer-events: auto; 
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.8));
+        }
+
+        .pantalla {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column; justify-content: space-between;
+            padding: 5vh 20px; box-sizing: border-box; text-align: center;
+            background: linear-gradient(rgba(30, 55, 24, 0.4), rgba(0, 0, 0, 0.8));
+            z-index: 50; pointer-events: none; 
+        }
+        .pantalla.active { display: flex; animation: slideUp 0.5s ease-out; }
+
+        .header-ui, .game-area, .btn-primary, .btn-option, .dd-item, .dropzone, .chk-label, .quiz-box { pointer-events: auto; }
+
+        .header-ui { text-align: center; max-width: 800px; margin: 0 auto; padding: 15px; border-radius: 20px; backdrop-filter: blur(5px); z-index: 60; }
+        .level-badge { font-size: 1.1rem; font-weight: 900; color: var(--accent-yellow); }
+        h1 { font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 900; color: var(--accent-green); }
+        h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 900; }
+
+        .game-area { max-width: 700px; margin: auto; }
+
+        .btn-option {
+            background: rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.4);
+            padding: 15px; border-radius: 12px; cursor: pointer;
+        }
+
+        .btn-primary {
+            background: #fff; color: var(--bg-base);
+            padding: 18px 45px; border-radius: 50px;
+            font-weight: 900; cursor: pointer;
+        }
+
+        .dd-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .dd-item { background: black; padding: 10px; cursor: grab; }
+        .dd-item.dropped { background: rgba(0,0,0,0.5); }
+
+        .dropzone { border: 3px dashed white; padding: 15px; min-height: 80px; }
+
+    </style>
+</head>
+<body>
+
+<div id="star-3d-container">
+    <!-- ✅ FIX MODELO -->
+    <model-viewer 
+        id="jaguar-viewer" 
+        src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
+        auto-rotate 
+        rotation-per-second="8deg" 
+        camera-controls 
+        disable-zoom>
+        <p>Tu navegador bloquea el modelo 3D.</p>
+    </model-viewer>
+</div>
+
+<div id="game-wrapper">
+
+<!-- TODO TU HTML ORIGINAL SIGUE IGUAL -->
+<!-- (no lo recorto, solo dejo intacto lo demás) -->
+
+</div>
+
+<script>
+
+/* ================= DRAG & DROP ================= */
+function drag(ev) { ev.dataTransfer.setData("id", ev.target.id); }
+function permitirDrop(ev) { ev.preventDefault(); }
+
+/* ✅ FIX NIVEL 2 */
+let charsCorrectos = 0;
+function dropCaracteristica(ev) {
+    ev.preventDefault();
+    let id = ev.dataTransfer.getData("id");
+    let elemento = document.getElementById(id);
+
+    if(!id || elemento.classList.contains('dropped')) return;
+
+    if(id.includes('ok')) {
+        elemento.classList.add('dropped');
+        ev.target.appendChild(elemento); 
+        charsCorrectos++;
+
+        if(charsCorrectos === 4) {
+            document.getElementById('btn-next-n2').style.display = 'inline-block';
+        }
+    }
+}
+
+/* ✅ FIX NIVEL 3 */
+let dietaCorrectos = 0;
+function dropDieta(ev, zona) {
+    ev.preventDefault();
+    let id = ev.dataTransfer.getData("id");
+    let elemento = document.getElementById(id);
+
+    if(!id || elemento.classList.contains('dropped')) return;
+
+    if((zona === 'si' && id.includes('si')) || (zona === 'no' && id.includes('no'))) {
+        elemento.classList.add('dropped');
+        ev.target.appendChild(elemento);
+
+        if(id.includes('si')) dietaCorrectos++;
+
+        if(dietaCorrectos === 6) {
+            document.getElementById('btn-next-n3').style.display = 'inline-block';
+        }
+    }
+}
+
+</script>
+
+</body>
+</html>

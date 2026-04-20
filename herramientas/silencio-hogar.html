@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Silencio en el Hogar | RENDER_FINAL</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- ESTILOS BASE RENDER_FINAL --- */
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --accent: #0000FF; 
+        }
+
+        ::selection { background: #00ffd5; color: #000; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Space Mono', monospace;
+            margin: 0; padding: 0;
+            line-height: 1.6; 
+            overflow-x: hidden;
+        }
+
+        /* --- MARQUESINA --- */
+        .marquee-container {
+            background: var(--text); color: var(--bg);
+            overflow: hidden; white-space: nowrap;
+            padding: 8px 0; font-size: 0.8rem;
+            text-transform: uppercase; border-bottom: 2px solid var(--accent);
+        }
+        .marquee-content { display: inline-block; animation: marquee 60s linear infinite; }
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-50%, 0); } }
+
+        /* --- HEADER PRINCIPAL --- */
+        .site-header {
+            padding: 1rem 5%; border-bottom: 2px solid var(--text); 
+            background: rgba(255,255,255,0.98); z-index: 100; position: sticky; top: 0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo {
+            font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.8rem;
+            letter-spacing: -1px; text-decoration: none; color: var(--text);
+        }
+        .blink { animation: blinker 1s linear infinite; color: var(--accent); }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        /* --- FORMATO CLÁSICO DE ARTÍCULO (UNA COLUMNA 720px) --- */
+        .article-container { 
+            max-width: 720px; margin: 0 auto; 
+            padding: 60px 20px 100px 20px; 
+        }
+        
+        .article-header { 
+            display: block; text-align: left; margin-bottom: 50px; 
+            border-bottom: 4px solid #000; padding-bottom: 40px; 
+            position: relative; 
+        }
+        .article-title { 
+            font-family: 'Archivo', sans-serif; font-size: 3.5rem; 
+            line-height: 0.95; margin: 0 0 25px 0; color: #000; text-transform: uppercase; letter-spacing: -1px;
+        }
+        .article-bajada { 
+            font-size: 1.3rem; color: #333; line-height: 1.4; margin-bottom: 30px; font-weight: 400; 
+            font-family: 'Space Mono', monospace;
+        }
+        .article-meta { 
+            font-family: 'Space Mono', monospace; font-size: 0.75rem; color: #666; 
+            text-transform: uppercase; letter-spacing: 1px; display: block; 
+            border-top: 1px solid #ddd; padding-top: 15px; 
+        }
+        
+        /* HOVER EFECTO EN FOTO DE PORTADA CON COLOR LAVADO */
+        .article-cover { 
+            width: 100%; margin-bottom: 50px; border: 2px solid #000; 
+            box-shadow: 8px 8px 0 var(--accent); 
+            filter: grayscale(100%);
+            transition: filter 0.5s ease, box-shadow 0.3s ease, transform 0.3s ease;
+            cursor: crosshair;
+        }
+        .article-cover:hover {
+            /* Acá está el cambio: en lugar de 0% (color chillón), lo dejamos en 60% para que sea tenue */
+            filter: grayscale(60%);
+            transform: translate(-2px, -2px);
+            box-shadow: 10px 10px 0 var(--accent);
+        }
+
+        /* --- TEXTO DE LECTURA --- */
+        .article-body {
+            font-family: 'Arial', sans-serif; 
+            font-size: 1.15rem; line-height: 1.8; color: #111;
+        }
+        .article-body p { margin-bottom: 1.8rem; }
+        .article-body h3 {
+            font-family: 'Archivo', sans-serif; font-size: 1.8rem;
+            text-transform: uppercase; margin: 3rem 0 1.5rem 0; line-height: 1.2;
+            border-bottom: 2px solid #000; display: inline-block; padding-bottom: 5px;
+        }
+
+        /* --- ANIMACIÓN SCROLLYTELLING --- */
+        .reveal-on-scroll {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .reveal-on-scroll.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- WIDGETS BRUTALISTAS --- */
+        .rf-widget {
+            border: 2px solid #000; box-shadow: 6px 6px 0 var(--accent);
+            padding: 30px; margin: 50px 0; background: #fff; 
+            font-family: 'Space Mono', monospace;
+        }
+        .rf-widget-header {
+            font-size: 0.8rem; text-transform: uppercase; color: var(--accent);
+            font-weight: bold; margin-bottom: 25px; border-bottom: 1px dotted #000; padding-bottom: 5px; letter-spacing: 1px;
+        }
+        .rf-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: center; }
+        @media (max-width: 600px) { .rf-grid-2 { grid-template-columns: 1fr; } }
+
+        /* WIDGET 1: PLANO DE LA CASA */
+        .blueprint-house { width: 120px; height: 140px; position: relative; margin: 0 auto; }
+        .bh-walls { position: absolute; bottom: 0; left: 0; width: 100%; height: 90px; border: 3px solid #000; border-top: none; z-index: 2; box-sizing: border-box; }
+        .bh-roof { position: absolute; top: 12px; left: -12px; width: 85px; height: 85px; border-top: 3px solid #000; border-left: 3px solid #000; transform: rotate(45deg); z-index: 2; box-sizing: border-box; }
+        .bh-fill { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; background-color: var(--accent); z-index: 1; transition: height 1.5s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .bh-fill.active { height: 80%; }
+        .bh-text { font-family: 'Archivo', sans-serif; font-size: 3.5rem; line-height: 1; margin: 15px 0 0 0; color: #000; text-align: center; text-shadow: 2px 2px 0 #fff; }
+        .stat-row { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 10px 0; font-size: 0.85rem;}
+        .stat-row strong { font-family: 'Archivo', sans-serif; font-size: 1.2rem; color: var(--accent); }
+
+        /* WIDGET 2: TESTIMONIO TIPO TERMINAL */
+        .typewriter-box { background: #f9f9f9; }
+        .typewriter-text { font-family: 'Archivo', sans-serif; font-size: 1.6rem; line-height: 1.2; text-transform: uppercase; color: #000; margin: 0; letter-spacing: -0.5px;}
+        .cursor { display: inline-block; width: 12px; height: 1.2em; background-color: var(--accent); animation: blink 0.8s infinite step-end; margin-left: 5px; vertical-align: middle;}
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* WIDGET 3: BARRAS */
+        .bar-container { width: 100%; margin: 15px 0; text-align: left; }
+        .bar-label { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 5px; color: #000; font-weight: bold;}
+        .bar-track { width: 100%; height: 35px; background: #eee; border: 2px solid #000; position: relative; }
+        .bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 1.5s ease-out; }
+
+        /* WIDGET 4: BOTONES DE ACCIÓN */
+        .help-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin-top: 20px; }
+        .help-btn { border: 2px solid #000; text-align: center; padding: 15px 5px; background: #fff; transition: all 0.2s; cursor: pointer; text-decoration: none; color: #000; display: block; }
+        .help-btn:hover { background: var(--accent); color: #fff; transform: translateY(-3px); box-shadow: 4px 4px 0 #000; }
+        .help-btn h4 { font-family: 'Archivo', sans-serif; font-size: 2.2rem; margin: 0; line-height: 1;}
+        .help-btn p { font-size: 0.7rem; margin: 8px 0 0 0; text-transform: uppercase; font-weight: bold;}
+        .btn-wpp { background: #000; color: #fff;}
+        .btn-wpp:hover { background: #fff; color: #000; border-color: #000; box-shadow: 4px 4px 0 var(--accent);}
+
+        /* --- FOOTER RENDER FINAL --- */
+        footer { margin-top: 60px; padding: 30px 5%; border-top: 2px solid var(--text); display: flex; justify-content: space-between; font-size: 0.75rem; background: #f9f9f9; }
+        @media (max-width: 768px) { footer { flex-direction: column; gap: 10px; text-align: center; } }
+    </style>
+</head>
+<body>
+
+    <div class="marquee-container">
+        <div class="marquee-content">
+            RENDER_FINAL_ [v.2.0.26] /// PERIODISMO DE DATOS Y NARRATIVAS VISUALES /// LA VERDAD ESTÁ EN EL ARCHIVO /// PROCESANDO SEÑAL /// RENDER_FINAL_ [v.2.0.26] /// PERIODISMO DE DATOS Y NARRATIVAS VISUALES /// LA VERDAD ESTÁ EN EL ARCHIVO /// PROCESANDO SEÑAL /// 
+        </div>
+    </div>
+    <header class="site-header">
+        <a href="#" class="logo">RENDER_FINAL<span class="blink">_</span></a>
+    </header>
+
+    <main class="article-container">
+        
+        <header class="article-header reveal-on-scroll">
+            <h1 class="article-title">El Silencio en el Hogar</h1>
+            <p class="article-bajada">La urgencia de visibilizar y prevenir el abuso sexual infantil. Las cifras ocultas detrás de las puertas cerradas.</p>
+            <span class="article-meta">:: CRÓNICAS | POR NATANAEL PEPPER | 10.03.26</span>
+        </header>
+
+        <img src="casalego.jpg" class="article-cover reveal-on-scroll" alt="Fotografía de la nota">
+
+        <div class="article-body">
+            
+            <p class="reveal-on-scroll">La conciencia sobre el abuso y abuso sexual en niños y adolescentes es clave para comprender y enfrentar un problema serio en nuestra sociedad. Aunque esta violencia puede ocurrir en diferentes lugares, la mayoría de los casos sucede dentro de la familia, que debería ser un espacio seguro y de protección.</p>
+
+            <p class="reveal-on-scroll">La explotación sexual es la forma más frecuente de trata en Argentina, afectando a alrededor de dos millones de menores. Algo que no debemos pasar por alto. Este problema es complejo y muchas veces se oculta por vergüenza o silencio; es urgente dar visibilidad al tema y entender los patrones de abuso que ocurren en el hogar.</p>
+
+            <p class="reveal-on-scroll">Según datos del Ministerio Público Tutelar, las estadísticas indican que el 80% de los casos de maltrato y abuso hacia niñas, niños y adolescentes (NNYA) se llevan a cabo en contextos intrafamiliares o ámbitos de cercanía.</p>
+
+            <div class="rf-widget reveal-on-scroll" id="widget-casa">
+                <div class="rf-widget-header">/// REPORTE DE INCIDENCIA OFICIAL</div>
+                <div class="rf-grid-2">
+                    <div style="text-align: center;">
+                        <div class="blueprint-house">
+                            <div class="bh-roof"></div>
+                            <div class="bh-walls"></div>
+                            <div class="bh-fill" id="fillCasa"></div>
+                        </div>
+                        <div class="bh-text" id="houseCounter">0%</div>
+                        <p style="font-size: 0.75rem; color: #555; text-transform: uppercase; margin: 0; line-height: 1.2; font-family: 'Space Mono', monospace;">Ocurre en el hogar y<br>ámbitos de cercanía</p>
+                    </div>
+                    <div>
+                        <p style="font-size: 0.85rem; color: #000; text-transform: uppercase; margin-bottom: 15px; font-weight: bold;">Vínculo con el agresor:</p>
+                        <div class="stat-row"><span>Familiar directo:</span> <strong>56.5%</strong></div>
+                        <div class="stat-row"><span>Conocido no familiar:</span> <strong style="color: #000;">17.7%</strong></div>
+                        <div class="stat-row" style="border-bottom: none; color: #888;"><span>Desconocido:</span> <strong style="color: #888;">25.8%</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="reveal-on-scroll">Las cifras del espanto</h3>
+            
+            <p class="reveal-on-scroll">El abuso sexual contra NNyA es una de las formas de maltrato más graves que existen. Según la Organización Mundial de la Salud (OMS), se estima que una de cada cinco niñas y uno de cada 13 niños son abusados sexualmente antes de los 18 años.</p>
+
+            <p class="reveal-on-scroll">En 2019 las víctimas de violencia sexual atendidas NNyA fue del 59,2% (2.986 casos). En 2021 las víctimas de violencia sexual registradas NNyA ascendieron a 3.219 (el 57.8%). De los cuales el 77% son mujeres, y la diferencia según género se amplía a mayor edad de la víctima. El mayor porcentaje de víctimas se concentra en el rango etario de 12 a 17 años.</p>
+
+            <p class="reveal-on-scroll">En una entrevista con la inspectora Vanina Raimundo se puso en conversación esta problemática. Ella cuenta cómo fue en la realidad el día a día de su trabajo. Generalmente a las escuelas llega lo que le pasa a la familia y a la sociedad. A través de esas conductas, el personal de la institución educativa puede ver o inferir algunas situaciones de presunto abuso. Las cuales llegaban a diario en mucha cantidad.</p>
+
+            <div class="rf-widget typewriter-box reveal-on-scroll" id="widget-cita">
+                <div class="rf-widget-header">/// REGISTRO DEL EXPEDIENTE</div>
+                <p class="typewriter-text">
+                    "<span id="type-texto"></span><span class="cursor"></span>"
+                </p>
+                <p id="type-autor" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; color: #555; text-transform: uppercase; margin-top: 25px; opacity: 0; transition: opacity 0.5s;">
+                    — Testimonio de una niña de 9 años a su maestra, <br>relatado por la Insp. Vanina Raimundo.
+                </p>
+            </div>
+
+            <p class="reveal-on-scroll">Ese es un crudo ejemplo de muchas situaciones en relación con el abuso intrafamiliar: quienes deberían cuidarte, son tus mayores peligros. La etapa más difícil fue durante la pandemia, ya que, al permanecer mucho tiempo en el hogar, el niño o niña pasaba mucho más tiempo con el presunto abusador, quien tenía más ocasiones de vulnerabilidad.</p>
+
+            <h3 class="reveal-on-scroll">Romper el silencio</h3>
+            <p class="reveal-on-scroll">Vanina Raimundo reflexiona y nos dice que cree que nuestros pequeños granos de arena pueden impactar en la sociedad: concientizar a los niños y jóvenes, tratar los temas para que sean visualizados, explicar, hablarles, tratar el tema del cuidado del cuerpo, y enseñarles a no ocultar cosas, ni secretos, ni cualquier situación que los haga sentir incómodos.</p>
+
+            <p class="reveal-on-scroll">A lo largo de los últimos años estos temas fueron tratados y hoy en día se visualizan aún más. Durante el periodo analizado, las consultas al Programa <em>Las Víctimas Contra Las Violencias</em> aumentaron y se incrementaron considerablemente las llamadas realizadas por los propios NNyA.</p>
+
+            <div class="rf-widget reveal-on-scroll" id="widget-barras">
+                <div class="rf-widget-header">/// LA INICIATIVA DE HABLAR</div>
+                <p style="font-family: 'Space Mono', monospace; font-size: 0.85rem; margin-bottom: 20px;">Víctimas menores de edad que tomaron la iniciativa de comunicarse y pedir ayuda:</p>
+                
+                <div class="bar-container">
+                    <div class="bar-label"><span>AÑO 2019</span><span>14.4%</span></div>
+                    <div class="bar-track"><div class="bar-fill" id="bar2019" style="background:#aaa;"></div></div>
+                </div>
+
+                <div class="bar-container">
+                    <div class="bar-label"><span>AÑO 2021</span><span>48.4%</span></div>
+                    <div class="bar-track"><div class="bar-fill" id="bar2021"></div></div>
+                </div>
+
+                <div style="margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 20px;">
+                    <p style="font-family: 'Space Mono', monospace; font-size: 1rem; font-weight: bold; margin:0;">En 2021, el <span style="color:var(--accent); font-size: 1.4rem;">72%</span> de las consultas de menores se realizaron mediante WhatsApp.</p>
+                </div>
+            </div>
+            
+            <p class="reveal-on-scroll">Al incorporarse la Línea de WhatsApp, ésta posibilitó un nuevo canal de acceso fundamental. Durante el 2020, el 50% de las consultas respecto a violencia familiar y/o sexual que realizaron los menores fue mediante la aplicación de mensajería, y en 2021, hasta septiembre, la cifra trepó al 72%.</p>
+
+            <div class="rf-widget reveal-on-scroll" style="margin-bottom:0;">
+                <div class="rf-widget-header">/// CANALES DE ASISTENCIA NACIONAL (24 HS)</div>
+                <p style="font-family: 'Space Mono', monospace; font-size: 0.85rem; margin-bottom: 25px; color: #333;">Cualquier persona que sea víctima o tenga conocimiento de una situación puede pedir asistencia de forma confidencial y gratuita desde cualquier punto del país:</p>
+                
+                <div class="help-grid">
+                    <a href="tel:137" class="help-btn">
+                        <h4>137</h4>
+                        <p>Violencia<br>Familiar</p>
+                    </a>
+                    <a href="tel:144" class="help-btn">
+                        <h4>144</h4>
+                        <p>Violencia<br>y Riesgo</p>
+                    </a>
+                    <a href="tel:145" class="help-btn">
+                        <h4>145</h4>
+                        <p>Trata y<br>Explotación</p>
+                    </a>
+                    <a href="https://wa.me/5491131331000" class="help-btn btn-wpp" target="_blank">
+                        <h4 style="color:#fff;">WPP</h4>
+                        <p>11 3133-1000</p>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer>
+        <div><strong>CONTACTO:</strong> editorial@renderfinal.com</div>
+        <div>&copy; 2026 RENDER_FINAL. Todos los derechos reservados.</div>
+    </footer>
+
+    <script>
+        const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
+
+        const articleObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    
+                    // 1. Revelar texto o widget general
+                    entry.target.classList.add('is-visible');
+
+                    // 2. Animar Plano de la Casa y Contador de Porcentaje
+                    if (entry.target.id === 'widget-casa' && !entry.target.classList.contains('animated')) {
+                        entry.target.classList.add('animated');
+                        document.getElementById('fillCasa').classList.add('active');
+                        
+                        // Lógica del contador del porcentaje (de 0 a 80 en 1.5s)
+                        let currentPercent = 0;
+                        const targetPercent = 80;
+                        const counterElement = document.getElementById('houseCounter');
+                        const intervalTime = 1500 / targetPercent; 
+                        
+                        let counterInterval = setInterval(() => {
+                            currentPercent++;
+                            counterElement.innerText = currentPercent + '%';
+                            if (currentPercent >= targetPercent) {
+                                clearInterval(counterInterval);
+                            }
+                        }, intervalTime);
+                    }
+
+                    // 3. Animar Barras
+                    if (entry.target.id === 'widget-barras') {
+                        document.getElementById('bar2019').style.width = '14.4%';
+                        document.getElementById('bar2021').style.width = '48.4%';
+                    }
+
+                    // 4. Iniciar máquina de escribir (solo una vez)
+                    if (entry.target.id === 'widget-cita' && !entry.target.classList.contains('typed')) {
+                        entry.target.classList.add('typed');
+                        iniciarCita();
+                    }
+                }
+            });
+        }, observerOptions);
+
+        // Seleccionar todos los elementos con la clase 'reveal-on-scroll'
+        document.querySelectorAll('.reveal-on-scroll').forEach(el => { articleObserver.observe(el); });
+
+        // Lógica de la máquina de escribir
+        const frase = "Seño, sabes que mi papá se acuesta conmigo y se hace pis.";
+        const targetFrase = document.getElementById('type-texto');
+        const targetAutor = document.getElementById('type-autor');
+        let indexLetra = 0;
+
+        function iniciarCita() {
+            if (indexLetra < frase.length) {
+                targetFrase.innerHTML += frase.charAt(indexLetra);
+                indexLetra++;
+                let velocidad = Math.floor(Math.random() * (90 - 40 + 1)) + 40; 
+                setTimeout(iniciarCita, velocidad);
+            } else {
+                targetAutor.style.opacity = 1;
+            }
+        }
+    </script>
+</body>
+</html>

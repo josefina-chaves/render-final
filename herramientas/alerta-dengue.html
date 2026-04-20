@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El mapa de la fiebre | RENDER_FINAL</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* --- ESTILOS BASE RENDER_FINAL --- */
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --accent: #0000FF; /* Azul eléctrico puro de Render Final */
+            --blood: #FF0000; /* ROJO ELÉCTRICO PURO para la sangre */
+            --surface: #f4f4f4;
+            --muted: #cccccc;
+        }
+
+        ::selection { background: var(--accent); color: #fff; }
+
+        body {
+            background-color: var(--bg); color: var(--text);
+            font-family: 'Space Mono', monospace; margin: 0; padding: 0;
+            line-height: 1.6; overflow-x: hidden;
+        }
+
+        .article-container { max-width: 720px; margin: 0 auto; padding: 80px 20px 60px 20px; display: block; box-sizing: border-box;}
+        
+        .article-header { margin-bottom: 50px; border-bottom: 4px solid var(--text); padding-bottom: 40px;}
+        .article-title { font-family: 'Archivo', sans-serif; font-size: clamp(2.5rem, 6vw, 4.5rem); line-height: 0.95; margin: 0 0 20px 0; color: var(--text); text-transform: uppercase; letter-spacing: -1px;}
+        .article-bajada { font-size: 1.3rem; color: #333; line-height: 1.4; margin-bottom: 30px; font-weight: 400; font-family: 'Space Mono', monospace;}
+        
+        .article-meta { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 1px; display: block; border-top: 1px solid var(--muted); padding-top: 15px; margin-top: 30px;}
+        .author-link { color: inherit; text-decoration: none; border-bottom: 1px dashed var(--muted); transition: all 0.2s ease; padding: 0 2px;}
+        .author-link:hover { color: #fff; background-color: var(--accent); border-bottom: 1px solid var(--accent); }
+
+        .article-text { font-size: 1.15rem; line-height: 1.8; margin-bottom: 30px; }
+        
+        h3 { font-family: 'Archivo', sans-serif; font-size: 1.8rem; text-transform: uppercase; margin: 3rem 0 1.5rem 0; line-height: 1.2; border-bottom: 2px solid var(--text); display: inline-block; padding-bottom: 5px; scroll-margin-top: 40px; }
+
+        /* --- INTERACTIVO 1: GRÁFICO CHART.JS --- */
+        .chart-container {
+            width: 100%; margin: 50px 0; padding: 20px; 
+            background: var(--surface); border: 2px solid var(--text); box-sizing: border-box;
+            position: relative;
+        }
+        .interactivo-label {
+            position: absolute; top: -15px; left: 20px; background: var(--accent); color: #fff;
+            font-size: 0.7rem; font-weight: bold; padding: 4px 8px; text-transform: uppercase;
+        }
+
+        /* --- INTERACTIVO 2: MAPA DE CAPAS --- */
+        .map-module {
+            width: 100%; border: 4px solid var(--text); margin: 50px 0; display: flex; flex-direction: column;
+            background: #fff; box-shadow: 8px 8px 0 var(--text);
+        }
+        .map-controls { display: flex; border-bottom: 2px dashed var(--text); background: var(--surface); }
+        .map-btn {
+            flex: 1; padding: 15px; border: none; background: transparent; font-family: 'Space Mono', monospace;
+            font-weight: bold; font-size: 0.85rem; cursor: pointer; text-transform: uppercase; transition: 0.2s;
+            border-right: 2px dashed var(--text);
+        }
+        .map-btn:last-child { border-right: none; }
+        .map-btn:hover { background: rgba(0, 0, 255, 0.1); }
+        .map-btn.active { background: var(--text); color: #fff; }
+        
+        .map-viewer {
+            position: relative; width: 100%; aspect-ratio: 1 / 1; background: #eaeaea; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+        }
+        
+        .map-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: contain; opacity: 0; transition: opacity 0.4s ease;
+            mix-blend-mode: multiply; 
+        }
+        .map-layer.visible { opacity: 1; }
+        .placeholder-text { font-family: 'Archivo'; font-size: 1.5rem; color: #999; text-transform: uppercase; text-align: center; padding: 20px;}
+
+        /* --- EFECTOS SCROLL --- */
+        .reveal-on-scroll { opacity: 0; transform: translateY(40px); transition: all 0.8s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .reveal-on-scroll.is-visible { opacity: 1; transform: translateY(0); }
+
+        /* --- EL MOSQUITO DE ACOSO Y MANCHA REALISTA Y AMORFA --- */
+        .mosquito-svg {
+            position: fixed; 
+            top: 0; /* CORRECCIÓN: Para que nazcan desde la esquina superior y no se pierdan abajo */
+            left: 0; /* CORRECCIÓN: Alineación obligatoria para position: fixed */
+            z-index: 100000; 
+            pointer-events: auto; /* Fundamental para que registre el clic */
+            width: 40px; height: 40px; opacity: 0.9; filter: drop-shadow(1px 2px 1px rgba(0,0,0,0.4));
+            will-change: transform; cursor: crosshair; 
+            
+            /* TRUCO: Agrandamos el área para que sea fácil darle clic */
+            padding: 15px; 
+            margin: -15px; 
+            border: 1px solid transparent; /* Caja invisible más grande */
+        }
+
+        /* --- MANCHA DE SANGRE CAÓTICA, AMORFA Y REALISTA --- */
+        .blood-splatter {
+            position: fixed;
+            /* Agrandamos la caja para permitir que las gotas satélite salpiquen más lejos */
+            width: 120px; height: 120px;
+            /* SVG complejo: Núcleo caótico desgarrado + grupos de gotas satélite dispersas y asimétricas */
+            background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M54.1,43.2C54.1,43.2,50,43.2,50,43.2C48,43.2,46.1,43.2,44.1,43.2C44.1,43.2,40,43.2,40,43.2C38,43.2,36.1,43.2,34.1,43.2C34.1,43.2,30,43.2,30,43.2C28,43.2,26.1,43.2,24.1,43.2C24.1,43.2,20,43.2,20,43.2C18,43.2,16.1,43.2,14.1,43.2M84.1,43.2L80,43.2C78.1,43.2,76.2,43.2,74.2,43.2C74.2,43.2,70.1,43.2,70.1,43.2C68.1,43.2,66.2,43.2,64.2,43.2C64.2,43.2,60.2,43.2,60.2,43.2C58.2,43.2,56.3,43.2,54.3,43.2L54.1,43.2M50,10C50,10,50,14.1,50,14.1C50,16.1,50,18,50,20C50,20,50,24.1,50,24.1C50,26.1,50,28,50,30C50,30,50,34.1,50,34.1C50,36.1,50,38,50,40C50,40,50,44.1,50,44.1C50,46.1,50,48,50,50C50,50,50,54.1,50,54.1C50,56.1,50,58,50,60C50,60,50,64.1,50,64.1C50,66.1,50,68,50,70C50,70,50,74.1,50,74.1C50,76.1,50,78,50,80C50,80,50,84.1,50,84.1C50,86.1,50,88,50,90L50,94.1M50,10L54.1,10C56.1,10,58,10,60,10C60,10,64.1,10,64.1,10C66.1,10,68,10,70,10C70,10,74.1,10,74.1,10C76.1,10,78,10,80,10C80,10,84.1,10,84.1,10C86.1,10,88,10,90,10M10,10L14.1,10C16.1,10,18,10,20,10C20,10,24.1,10,24.1,10C26.1,10,28,10,30,10C30,10,34.1,10,34.1,10C36.1,10,38,10,40,10C40,10,44.1,10,44.1,10C46.1,10,48,10,50,10"/><path d="M50 40 L50 60 M40 50 L60 50" stroke="%23FF0000" stroke-width="10"/><path d="M50 40 L50 60 M40 50 L60 50" stroke="%23FF0000" stroke-width="10" transform="rotate(45 50 50)"/><path d="M25 70C 26 71, 28 71, 29 70C 31 69, 31 67, 30 65C 29 64, 27 63, 25 64C 23 65, 23 68, 25 70Z" fill="%23FF0000"/><path d="M72 25C 73 26, 76 26, 77 25C 79 24, 79 21, 78 19C 77 18, 74 17, 72 18C 70 19, 70 23, 72 25Z" fill="%23FF0000"/><path d="M88 78C 89 80, 92 81, 93 80C 95 79, 96 76, 95 74C 94 73, 91 72, 89 73C 87 74, 87 77, 88 78Z" fill="%23FF0000"/><path d="M12 28C 13 29, 16 30, 17 29C 19 28, 20 25, 19 23C 18 22, 15 21, 13 22C 11 23, 11 26, 12 28Z" fill="%23FF0000"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            pointer-events: none; /* Que no moleste al scroll */
+            z-index: 999999;
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.5);
+            will-change: opacity, transform;
+            animation: splatFade 1.2s forwards;
+        }
+
+        @keyframes splatFade {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(0.8); }
+            10% { transform: translate(-50%, -50%) scale(1.1); }
+            20% { transform: translate(-50%, -50%) scale(1); }
+            70% { opacity: 1; }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="article-container" id="main-article">
+        
+        <header class="article-header">
+            <h1 class="article-title">El mapa de la fiebre</h1>
+            <p class="article-bajada">Cuando el dengue pica en la desigualdad.</p>
+            <span class="article-meta">:: INVESTIGACIÓN | POR <a href="/#equipo" class="author-link">JANET USINGER</a></span>
+        </header>
+
+        <p class="article-text reveal-on-scroll">"El dolor empieza detrás de los ojos, como si te estuvieran clavando dos agujas desde adentro. Después baja a las articulaciones. Te juro que sentís que te molieron a palos. Pero lo peor no es la fiebre, lo peor es la culpa. Porque cuando viene el de la municipalidad a fumigar y te dice que tenés que <em>descacharrar</em>, vos lo mirás y no sabés cómo explicarle que no juntás agua en baldes por sucia o por dejada. Juntamos agua en los tachos azules porque acá, a las diez de la mañana, abrís la canilla y solo escupe aire".</p>
+        
+        <p class="article-text reveal-on-scroll">Carmen tiene 42 años, vive en un barrio de calles de tierra en las afueras de <strong>Las Breñas, en el interior del Chaco</strong>, y lleva cinco días en cama. Su hijo menor, de nueve, empezó con los mismos síntomas ayer. En su cuadra, atravesada por zanjones a cielo abierto, casi no hay casa que no tenga o haya tenido un familiar con dengue en las últimas semanas.</p>
+
+        <p class="article-text reveal-on-scroll">La historia de Carmen podría estar ocurriendo hoy en el conurbano bonaerense, en los barrios periféricos de Rosario o en Tucumán. No es un caso aisladp; es el retrato de un fracaso estructural a nivel país. Durante décadas, la Argentina se acostumbró a pensar en el dengue como una amenaza lejana, un problema del norte endémico o de países vecinos. Hoy, la realidad nos pasó por encima: el mosquito <em>Aedes aegypti</em> rompió la barrera del frío, se instaló en el centro del país y el mapa nacional de contagios es, antes que nada, un mapa de la desigualdad.</p>
+
+        <h3 class="reveal-on-scroll">El fin del invierno y la nueva normalidad</h3>
+        <p class="article-text reveal-on-scroll">El primer factor de esta tormenta perfecta es el clima. El calentamiento global alteró las reglas del juego en todo el territorio nacional. Los inviernos pampeanos y centrales ya no son lo suficientemente largos ni crudos como para cortar el ciclo reproductivo del vector.</p>
+
+        <div class="chart-container reveal-on-scroll">
+            <div class="interactivo-label">Desestacionalización</div>
+            <canvas id="dengueChart" height="200"></canvas>
+            <p style="font-size: 0.7rem; color: #666; margin-top: 15px;">Evolución de casos notificados por semanas epidemiológicas. El pico de 2024 triplica en volumen histórico y se sostiene durante meses fríos. Datos: Ministerio de Salud de la Nación.</p>
+        </div>
+
+        <p class="article-text reveal-on-scroll">Los datos epidemiológicos del Ministerio de Salud de los últimos años muestran cómo la curva de contagios, que antes caía en picada en abril, ahora se estira hasta bien entrado el invierno. El calor extremo y las lluvias anómalas convirtieron a gran parte de la Argentina en una incubadora a cielo abierto que funciona casi todo el año.</p>
+
+        <h3 class="reveal-on-scroll">La geografía de la picadura</h3>
+        <p class="article-text reveal-on-scroll">Pero el mosquito no pica igual en todos lados. Si bien el <em>Aedes aegypti</em> tiene un vuelo corto y urbano, su impacto social es profundamente asimétrico. El discurso sanitario oficial suele insistir en responsabilizar al vecino: <em>"dé vuelta los recipientes, limpie su patio, use repelente"</em>. Una narrativa que choca de frente con la realidad de los barrios populares del país.</p>
+
+        <p class="article-text reveal-on-scroll">¿Cómo se le pide a una familia que vacíe sus reservas cuando la red de agua potable es deficiente y la presión no llega durante los días de calor? ¿Cómo se sostiene la compra de repelentes —cuyos precios en farmacias y supermercados se disparan a niveles prohibitivos ante cada brote— en hogares donde los ingresos apenas cubren la canasta básica alimentaria?</p>
+
+        <div class="map-module reveal-on-scroll">
+            <div class="map-controls">
+                <button class="map-btn active" id="btn-dengue" onclick="toggleLayer('dengue')">Mapa de Dengue</button>
+                <button class="map-btn" id="btn-nbi" onclick="toggleLayer('nbi')">Falta de Infraestructura</button>
+            </div>
+            <div class="map-viewer">
+                <img src="../images/mpdengue.png" class="map-layer visible" id="layer-dengue" alt="Casos de Dengue" onerror="this.style.display='none'">
+                <img src="../images/nbi.png" class="map-layer" id="layer-nbi" alt="Infraestructura NBI" onerror="this.style.display='none'">
+                
+                <div class="placeholder-text" id="map-placeholder">
+                    [ CONSOLA GEOGRÁFICA ]<br><span style="font-size: 0.8rem; color:#666;">Activá las capas superiores para cruzar los datos.</span>
+                </div>
+            </div>
+        </div>
+
+        <p class="article-text reveal-on-scroll">Cuando superponemos el mapa de calor de los contagios nacionales con los datos del INDEC sobre Necesidades Básicas Insatisfechas (NBI), la correlación es brutal. Los focos más rojos de la epidemia coinciden milimétricamente con las zonas donde faltan cloacas, donde el asfalto no llegó y donde el Estado solo aparece para fumigar cuando el brote ya es incontrolable.</p>
+
+        <h3 class="reveal-on-scroll">El colapso en la sala de espera</h3>
+        <p class="article-text reveal-on-scroll">"Para cuando logré que me atendieran en la salita, ya no daba más", sigue contando Carmen. "Había gente sentada en el piso, madres con los pibes volando de fiebre. Te dan paracetamol, te dicen que tomes mucha agua y que vuelvas a tu casa. Pero yo vuelvo a mi casa y el zanjón de la esquina sigue lleno de agua estancada. El mosquito sigue ahí".</p>
+
+        <p class="article-text reveal-on-scroll">El dengue nos obliga a mirar la Argentina que muchas veces se intenta tapar. Nos demuestra que las crisis sanitarias no se resuelven solo en los hospitales ni con campañas en redes sociales, sino con infraestructura pública y urbanización. Mientras el acceso al agua potable, al saneamiento y a una vivienda digna sigan siendo un privilegio y no un derecho garantizado en todo el país, el peaje de esta nueva normalidad climática lo seguirán pagando los mismos de siempre: con su salud, y en la sala de espera de un hospital colapsado.</p>
+
+    </main>
+
+    <script>
+        // --- LÓGICA DEL MAPA DE CAPAS ---
+        let stateDengue = true;
+        let stateNbi = false;
+
+        function toggleLayer(layer) {
+            if(layer === 'dengue') {
+                stateDengue = !stateDengue;
+                document.getElementById('btn-dengue').classList.toggle('active', stateDengue);
+                document.getElementById('layer-dengue').classList.toggle('visible', stateDengue);
+            } else if (layer === 'nbi') {
+                stateNbi = !stateNbi;
+                document.getElementById('btn-nbi').classList.toggle('active', stateNbi);
+                document.getElementById('layer-nbi').classList.toggle('visible', stateNbi);
+            }
+            document.getElementById('map-placeholder').style.opacity = (stateDengue || stateNbi) ? '0' : '1';
+        }
+
+        // --- LÓGICA DEL GRÁFICO (CHART.JS) ESTILO RENDER FINAL ---
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('dengueChart').getContext('2d');
+            
+            // Creamos un gradiente de volumen para matar lo "chato"
+            let gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(0, 0, 255, 0.85)'); // Azul Render arriba
+            gradient.addColorStop(1, 'rgba(0, 0, 255, 0.0)');  // Transparente abajo
+
+            const labelsSemanas = Array.from({length: 30}, (_, i) => `Sem ${i+1}`);
+            const data2020 = [10, 15, 20, 35, 60, 100, 150, 200, 250, 280, 250, 180, 100, 50, 20, 10, 5, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            const data2024 = [50, 80, 150, 300, 500, 800, 1500, 2500, 3800, 4500, 5200, 4800, 4000, 3200, 2500, 1800, 1200, 800, 500, 300, 200, 150, 100, 80, 50, 40, 30, 20, 15, 10];
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labelsSemanas,
+                    datasets: [
+                        { 
+                            label: 'Brote 2020 (Referencia)', 
+                            data: data2020, 
+                            borderColor: '#666666', 
+                            borderWidth: 2, 
+                            borderDash: [4, 4], // Línea punteada de fondo
+                            tension: 0.1, // Línea tensa, no suave
+                            pointRadius: 0,
+                            pointHoverRadius: 6, // Aparece al pasar el mouse
+                            pointHoverBackgroundColor: '#111111'
+                        },
+                        { 
+                            label: 'Brote 2024/2025', 
+                            data: data2024, 
+                            borderColor: '#0000FF', // Azul Render característico
+                            backgroundColor: gradient, // Efecto de volumen
+                            borderWidth: 3, 
+                            fill: true, 
+                            tension: 0.1, // Línea tensa y cruda
+                            pointRadius: 0, 
+                            pointHoverRadius: 7, // Interactividad fuerte
+                            pointHoverBackgroundColor: '#0000FF',
+                            pointHoverBorderColor: '#ffffff',
+                            pointHoverBorderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { 
+                        mode: 'index', 
+                        intersect: false // Permite que el tooltip aparezca sin tener que tocar exactamente la línea
+                    },
+                    plugins: {
+                        legend: { 
+                            position: 'top', 
+                            align: 'end',
+                            labels: { 
+                                font: { family: 'Space Mono', size: 11 },
+                                color: '#111111',
+                                usePointStyle: true,
+                                boxWidth: 8
+                            } 
+                        },
+                        tooltip: { 
+                            backgroundColor: '#111111', 
+                            titleFont: { family: 'Archivo', size: 14 }, 
+                            bodyFont: { family: 'Space Mono', size: 12 },
+                            padding: 15,
+                            cornerRadius: 0, // Bordes en 90 grados (Brutalista)
+                            displayColors: true,
+                            callbacks: {
+                                label: function(context) {
+                                    return ` ${context.dataset.label}: ${context.parsed.y} casos`;
+                                }
+                            }
+                        }
+                    },
+                    scales: { 
+                        x: { 
+                            display: true, 
+                            grid: { display: false, drawBorder: true, borderColor: '#111111' },
+                            ticks: { font: { family: 'Space Mono', size: 9 }, color: '#666', maxTicksLimit: 8 }
+                        }, 
+                        y: { 
+                            display: true, 
+                            grid: { color: '#cccccc', borderDash: [3, 3], drawBorder: false }, // Grilla punteada horizontal
+                            ticks: { font: { family: 'Space Mono', size: 10 }, color: '#111111' }
+                        } 
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeOutQuart' // Animación de entrada fluida al cargar la página
+                    }
+                }
+            });
+        });
+
+        // --- OBSERVER PARA ANIMACIONES DE SCROLL ---
+        const obs = new IntersectionObserver((es) => {
+            es.forEach(e => {
+                if (e.isIntersecting) { e.target.classList.add('is-visible'); }
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal-on-scroll').forEach(el => obs.observe(el));
+
+        // --- LÓGICA DEL ENJAMBRE (MOSQUITOS ACUMULATIVOS) ---
+        const mosquitoSVG = `
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 20 L50 80 M45 40 L20 30 M55 40 L80 30 M45 50 L10 50 M55 50 L90 50 M45 60 L25 75 M55 60 L75 75" stroke="var(--text)" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="50" cy="30" r="6" fill="var(--text)"/>
+                <path d="M50 15 L50 5" stroke="var(--accent)" stroke-width="3"/>
+            </svg>
+        `;
+
+        let activeMosquitoes = 0;
+        let maxMosquitoes = 1; // Al principio solo permitimos 1
+
+        // El límite sube según cuánto scrollea el lector
+        window.addEventListener('scroll', () => {
+            // Calculamos el porcentaje de scroll (0 a 1)
+            const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+            let scrollPct = window.scrollY / scrollableHeight;
+            
+            // Llevamos el límite de 1 a un máximo de 12 mosquitos simultáneos al final
+            maxMosquitoes = Math.floor(scrollPct * 11) + 1; 
+        });
+
+        function spawnAnnoyingMosquito() {
+            activeMosquitoes++;
+            
+            const mosquito = document.createElement('div');
+            mosquito.className = 'mosquito-svg';
+            mosquito.innerHTML = mosquitoSVG;
+            document.body.appendChild(mosquito);
+
+            let pos = { x: Math.random() > 0.5 ? -100 : window.innerWidth + 100, y: Math.random() * window.innerHeight };
+            let target = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+            let speed = 0.05;
+            let isAlive = true;
+            let escapeTimeout;
+            let lifespanTimeout; // CORRECCIÓN: Declaramos el timeout arriba para poder usarlo en el clic
+
+            function setCentralTarget() {
+                target.x = window.innerWidth * 0.1 + Math.random() * (window.innerWidth * 0.8);
+                target.y = window.innerHeight * 0.1 + Math.random() * (window.innerHeight * 0.8);
+                speed = Math.random() > 0.3 ? 0.05 : 0.02;
+            }
+
+            function update() {
+                if (!isAlive) return; 
+                
+                pos.x += (target.x - pos.x) * speed;
+                pos.y += (target.y - pos.y) * speed;
+
+                let noiseX = (Math.random() - 0.5) * 5;
+                let noiseY = (Math.random() - 0.5) * 5;
+
+                let angle = Math.atan2(target.y - pos.y, target.x - pos.x) * (180 / Math.PI) + 90;
+
+                mosquito.style.transform = `translate(${pos.x + noiseX}px, ${pos.y + noiseY}px) rotate(${angle}deg)`;
+
+                if (Math.hypot(target.x - pos.x, target.y - pos.y) < 15) {
+                    setCentralTarget();
+                }
+
+                requestAnimationFrame(update);
+            }
+
+            // --- FUNCIÓN PARA MATAR AL MOSQUITO Y MANCHAR ---
+            mosquito.addEventListener('click', (e) => {
+                if (!isAlive) return; // Ya está muerto
+                isAlive = false;
+
+                // Crear mancha caótica y amorfa
+                const splatter = document.createElement('div');
+                splatter.className = 'blood-splatter';
+                splatter.style.left = `${pos.x}px`; // Splatter centrado en la posición actual
+                splatter.style.top = `${pos.y}px`;
+                document.body.appendChild(splatter);
+
+                // Eliminar mancha después de la animación
+                setTimeout(() => {
+                    splatter.remove();
+                }, 1200); // Mismo tiempo que la animación splatFade forwards
+
+                // Eliminar mosquito y limpiar
+                mosquito.remove();
+                document.removeEventListener('mousemove', onMouseMove);
+                activeMosquitoes--;
+                clearTimeout(escapeTimeout);
+                clearTimeout(lifespanTimeout); // Limpiar el timer natural de vida
+            });
+
+            setCentralTarget();
+            requestAnimationFrame(update);
+
+            const onMouseMove = (e) => {
+                if(!isAlive) return;
+                const distMouse = Math.hypot(e.clientX - pos.x, e.clientY - pos.y);
+                
+                // Radar reducido para dejarse cazar
+                if(distMouse < 40) {
+                    let angleMouse = Math.atan2(pos.y - e.clientY, pos.x - e.clientX);
+                    target.x = pos.x + Math.cos(angleMouse) * 150; // Salto corto
+                    target.y = pos.y + Math.sin(angleMouse) * 150;
+                    speed = 0.05; // Velocidad de escape reducida
+
+                    clearTimeout(escapeTimeout);
+                    escapeTimeout = setTimeout(() => {
+                        setCentralTarget();
+                    }, 500);
+                }
+            };
+            
+            document.addEventListener('mousemove', onMouseMove);
+
+            // Vive un tiempo aleatorio entre 10 y 20 segundos antes de irse naturalmente
+            const lifespan = 10000 + Math.random() * 10000;
+            
+            lifespanTimeout = setTimeout(() => {
+                if (!isAlive) return;
+                target.x = pos.x > window.innerWidth / 2 ? window.innerWidth + 200 : -200;
+                speed = 0.08;
+                setTimeout(() => {
+                    if (!isAlive) return;
+                    isAlive = false;
+                    mosquito.remove();
+                    document.removeEventListener('mousemove', onMouseMove);
+                    activeMosquitoes--; 
+                }, 3000); 
+            }, lifespan);
+        }
+
+        // Aparece el primero a los 3 segundos
+        setTimeout(() => {
+            spawnAnnoyingMosquito();
+            
+            // Evaluamos constantemente si necesitamos más mosquitos
+            setInterval(() => {
+                if (activeMosquitoes < maxMosquitoes) {
+                    spawnAnnoyingMosquito();
+                }
+            }, 1500); // Chequea cada segundo y medio si hay "cupo" libre
+            
+        }, 3000);
+
+    </script>
+</body>
+</html>

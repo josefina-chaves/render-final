@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RENDER_FINAL | Manual de Estilo</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* PALETA OFICIAL */
+            --rf-blue: #0033CC; /* Azul profundo característico */
+            --rf-red: #FF2A00;  /* Rojo de acento */
+            --rf-black: #000000; /* Negro puro */
+            --rf-gray: #E5E5E5;  /* Gris de fondo/bordes */
+            
+            --bg-color: #f4f4f4; /* Fondo general de la página */
+            --text-color: #111111; 
+            
+            --font-display: 'Archivo', sans-serif;
+            --font-mono: 'Space Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-display);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        /* TIPOGRAFÍA DE MARCA */
+        .rf-name {
+            font-family: var(--font-display);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+        .blink { animation: blink 1s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* CONTENEDOR CENTRAL */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* HEADER AZUL */
+        header {
+            background-color: var(--rf-blue);
+            color: #ffffff;
+            padding: 50px 40px;
+            margin-bottom: 30px;
+            border-bottom: 4px solid var(--rf-black);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .system-status {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            color: rgba(255,255,255,0.8);
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            color: rgba(255,255,255,0.9);
+        }
+
+        /* CAJAS INDEPENDIENTES (CARDS) */
+        .card {
+            background-color: #ffffff;
+            border: 1px solid var(--rf-black);
+            border-bottom: 4px solid var(--rf-black);
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--rf-gray);
+            padding-bottom: 15px;
+        }
+
+        .section-number {
+            font-family: var(--font-mono);
+            font-size: 2.2rem;
+            margin-right: 20px;
+            color: var(--rf-blue);
+            font-weight: 700;
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--rf-black);
+            letter-spacing: -0.5px;
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            color: var(--rf-blue);
+            margin: 25px 0 10px 0;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        p { font-size: 1.1rem; margin-bottom: 20px; }
+
+        ul { margin-bottom: 20px; padding-left: 20px; list-style-type: square; }
+        li { margin-bottom: 12px; font-size: 1.1rem; }
+        
+        strong { font-weight: 900; }
+
+        /* PALETA DE COLORES UI */
+        .color-grid {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .color-box {
+            flex: 1;
+            min-width: 120px;
+            padding: 20px 15px;
+            color: #fff;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            border: 1px solid var(--rf-black);
+            text-align: center;
+        }
+        .color-blue { background-color: var(--rf-blue); }
+        .color-red { background-color: var(--rf-red); }
+        .color-black { background-color: var(--rf-black); }
+        .color-gray { background-color: var(--rf-gray); color: var(--rf-black); }
+
+        /* FOOTER CORREGIDO */
+        footer {
+            background-color: var(--rf-gray);
+            color: var(--rf-black);
+            padding: 30px 40px;
+            border-top: 2px solid var(--rf-black);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 40px;
+        }
+
+        .footer-links a { color: var(--rf-blue); text-decoration: none; font-weight: 700; }
+        .footer-links a:hover { text-decoration: underline; }
+
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            header, .card, footer { padding: 25px 20px; }
+            .section-header { flex-direction: column; align-items: flex-start; }
+            .section-number { margin-bottom: 5px; }
+            footer { flex-direction: column; gap: 15px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="system-status">
+                <span>/// DOCUMENTO_OFICIAL</span>
+                <span>VERSIÓN: 3.2</span>
+            </div>
+            <h1>MANUAL DE ESTILO</h1>
+            <p class="subtitle">Protocolo de redacción, diseño y ética periodística.</p>
+        </header>
+
+        <div class="card">
+            <div class="section-header">
+                <span class="section-number">01</span>
+                <h2>El Manifiesto</h2>
+            </div>
+            <p><strong><span class="rf-name">RENDER_FINAL<span class="blink">_</span></span> no es un portal de noticias; es un laboratorio de periodismo visual.</strong></p>
+            <p>En la era del ruido infinito, nuestra misión es <strong>procesar la señal</strong>. No buscamos la primicia, buscamos la versión definitiva de los hechos. Nuestras crónicas de largo aliento cruzan el rigor de la investigación académica y de datos con la potencia narrativa de la literatura de no ficción.</p>
+        </div>
+
+        <div class="card">
+            <div class="section-header">
+                <span class="section-number">02</span>
+                <h2>La Voz (tono editorial)</h2>
+            </div>
+            <p>Buscamos firmas que tengan barro en los zapatos y código en la cabeza. El estilo de <span class="rf-name">RENDER_FINAL<span class="blink">_</span></span> se apoya en tres pilares:</p>
+            <ul>
+                <li><strong>Cero condescendencia:</strong> El lector es inteligente. No le mastiques la información. Explicá la complejidad con claridad, sin simplificar el problema.</li>
+                <li><strong>Ni paper, ni diario íntimo:</strong> El texto debe tener el rigor documental de una tesis, pero leerse con la tensión y el ritmo de un buen guion.</li>
+                <li><strong>Mostrar, no adjetivar:</strong> No nos digas que una crisis es "terrible". Describí la escena y presentá el archivo de datos que respalda la tragedia.</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <div class="section-header">
+                <span class="section-number">03</span>
+                <h2>Formatos Permitidos</h2>
+            </div>
+            <h3>A. Crónica de Datos (Data-Driven)</h3>
+            <p>Toma una base de datos dura, un censo o un presupuesto público y hace el camino inverso: va del gráfico a la calle para contar la historia humana detrás del porcentaje.</p>
+            
+            <h3>B. Ensayos Visuales</h3>
+            <p>Textos donde la imagen (infografías, modelos 3D, mapas) <strong>es</strong> el texto principal. El redactor escribe alrededor de la interfaz.</p>
+
+            <h3>C. Perfiles y Entrevistas</h3>
+            <p>Diálogos en profundidad con actores clave de la tecnología, política o ciencia, enmarcados en un contexto descriptivo fuerte.</p>
+        </div>
+
+        <div class="card">
+            <div class="section-header">
+                <span class="section-number">04</span>
+                <h2>Identidad Visual</h2>
+            </div>
+            <p>Las infografías, fondos y elementos de UI dentro de la revista deben ceñirse estrictamente a la paleta de la marca. <strong>Evitamos los bloques de fondo negro densos</strong> que dificulten la lectura y fatiguen la vista.</p>
+            <div class="color-grid">
+                <div class="color-box color-blue">
+                    <strong>AZUL</strong><br>#0033CC
+                </div>
+                <div class="color-box color-red">
+                    <strong>ROJO</strong><br>#FF2A00
+                </div>
+                <div class="color-box color-black">
+                    <strong>NEGRO</strong><br>#000000
+                </div>
+                <div class="color-box color-gray">
+                    <strong>GRIS</strong><br>#E5E5E5
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-header">
+                <span class="section-number">05</span>
+                <h2>Maquetación y Gráficos</h2>
+            </div>
+            <p>Para los redactores de la revista, el volcado del contenido se hará directamente en nuestro CMS (WordPress). Al estructurar la nota, es obligatorio respetar las siguientes normativas de diseño:</p>
+            <ul>
+                <li><strong>Interactividad obligatoria:</strong> Los gráficos no pueden ser simples capturas de pantalla o imágenes estáticas. Deben diseñarse (vía Datawrapper, Flourish, etc.) para incluir interacción: tooltips al pasar el mouse, filtros o animaciones de entrada.</li>
+                <li><strong>Cartografía limpia:</strong> Cuando se utilicen mapas, exigimos mapas vectoriales interactivos. Deben ser planos y monocromáticos (usando nuestra paleta). Se prohíbe el uso de relieve satelital tipo Google Maps a menos que el terreno geográfico sea el foco exclusivo de la nota.</li>
+                <li><strong>Ritmo de lectura:</strong> Evitar los bloques de texto asfixiantes. Alternar un párrafo de alta densidad estadística con elementos visuales de respiro.</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <div class="section-header">
+                <span class="section-number">06</span>
+                <h2>¿Tenés algo para contar?</h2>
+            </div>
+            <p>Si querés publicar en <span class="rf-name">RENDER_FINAL<span class="blink">_</span></span>, no envíes el texto terminado. Envianos un <strong>pitch (propuesta)</strong> de no más de 300 palabras al mail editorial detallando:</p>
+            <ul>
+                <li><strong>El Foco:</strong> ¿De qué trata la historia y por qué es relevante AHORA?</li>
+                <li><strong>Los Datos:</strong> ¿Qué bases de datos o fuentes primarias vas a usar para sostener la nota?</li>
+                <li><strong>La Visualización:</strong> ¿Qué elementos interactivos imaginás que podrían acompañar el texto?</li>
+            </ul>
+        </div>
+
+        <footer>
+            <div class="footer-links">
+                <strong>CONTACTO:</strong> <a href="mailto:editorial@renderfinal.com">editorial@renderfinal.com</a>
+            </div>
+            <div style="text-align: right;">
+                &copy; 2026 <span class="rf-name">RENDER_FINAL<span class="blink">_</span></span>.<br>
+                Renderizado en Entre Ríos, Arg.
+            </div>
+        </footer>
+    </div>
+
+</body>
+</html>

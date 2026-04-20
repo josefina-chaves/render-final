@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La llamada que llega tarde | RENDER_FINAL</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- ESTILOS BASE RENDER_FINAL --- */
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --accent: #0000FF; 
+            --surface: #f4f4f4;
+            --border: #000000;
+            --muted: #cccccc;
+        }
+
+        ::selection { background: var(--accent); color: #fff; }
+
+        body {
+            background-color: var(--bg); color: var(--text);
+            font-family: 'Space Mono', monospace; margin: 0; padding: 0;
+            line-height: 1.6; overflow-x: hidden;
+        }
+
+        .blink { animation: blinker 1s linear infinite; color: var(--accent); }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        /* --- 1. OVERLAY DE INICIO --- */
+        .intro-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px);
+            z-index: 9998; transition: opacity 0.5s ease-out;
+        }
+
+        /* --- 2. EL WIDGET DEL TELÉFONO (DINÁMICO) --- */
+        .call-widget {
+            background: var(--bg);
+            border: 4px solid var(--border);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 12px 12px 0 var(--accent);
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            z-index: 9999;
+            transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* ESTADO 1: CENTRADO (Llamada Entrante) */
+        .call-widget.centered {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%; max-width: 350px;
+        }
+
+        /* ESTADO 2: FLOTANTE A LA IZQUIERDA Y MÁS ABAJO (Llamada Atendida) */
+        .call-widget.floating {
+            position: fixed; 
+            top: 90px; /* Más abajo como pediste */
+            left: 20px; /* A la izquierda */
+            transform: translate(0, 0);
+            width: 250px;
+            padding: 15px;
+            border-width: 3px;
+            box-shadow: 6px 6px 0 var(--accent);
+            border-radius: 15px;
+        }
+
+        .caller-info-row {
+            display: flex; align-items: center; gap: 15px;
+        }
+
+        .caller-avatar {
+            width: 55px; height: 55px; border: 3px solid var(--border);
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            font-family: 'Archivo', sans-serif; font-size: 1.8rem; color: var(--border);
+            background: var(--surface); flex-shrink: 0;
+            transition: all 0.4s;
+        }
+        .call-widget.floating .caller-avatar { width: 40px; height: 40px; font-size: 1.2rem; border-width: 2px;}
+
+        .caller-details { display: flex; flex-direction: column; }
+        .caller-name { font-family: 'Archivo', sans-serif; font-size: 1.3rem; text-transform: uppercase; margin: 0; line-height: 1; transition: font-size 0.4s;}
+        .call-widget.floating .caller-name { font-size: 1rem; }
+        
+        .caller-status { font-family: 'Space Mono', monospace; font-size: 0.85rem; color: var(--accent); text-transform: uppercase; font-weight: bold; margin-top: 5px; transition: font-size 0.4s;}
+        .call-widget.floating .caller-status { font-size: 1.2rem; color: var(--border); margin-top: 2px; }
+
+        .action-buttons {
+            display: flex; width: 100%; justify-content: space-between; gap: 10px; margin-top: 25px;
+            overflow: hidden; transition: all 0.4s ease-out; max-height: 100px; opacity: 1;
+        }
+        
+        /* Oculta los botones cuando está flotando */
+        .call-widget.floating .action-buttons {
+            max-height: 0; margin-top: 0; opacity: 0; pointer-events: none;
+        }
+
+        .btn-call {
+            flex: 1; padding: 12px 0; border: 2px solid var(--border); border-radius: 10px;
+            font-family: 'Space Mono', monospace; font-size: 0.85rem; font-weight: bold;
+            text-transform: uppercase; cursor: pointer; transition: all 0.2s; background: var(--surface); color: var(--border);
+        }
+        .btn-call:hover { background: var(--muted); }
+        
+        .btn-call.answer { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .btn-call.answer:hover { background: transparent; color: var(--accent); border-color: var(--accent); }
+
+        /* --- CONTENEDOR CENTRAL DE LA NOTA --- */
+        .article-container { max-width: 720px; margin: 0 auto; padding: 80px 20px 60px 20px; display: none; opacity: 0; transition: opacity 0.8s ease-in; box-sizing: border-box;}
+        
+        .article-header { margin-bottom: 50px; border-bottom: 4px solid var(--border); padding-bottom: 40px;}
+        .article-title { font-family: 'Archivo', sans-serif; font-size: clamp(3rem, 6vw, 4.5rem); line-height: 0.95; margin: 0 0 20px 0; color: var(--border); text-transform: uppercase; letter-spacing: -1px;}
+        .article-bajada { font-size: 1.3rem; color: #333; line-height: 1.4; margin-bottom: 30px; font-weight: 400; font-family: 'Space Mono', monospace;}
+        .article-meta { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 1px; display: block; border-top: 1px solid var(--muted); padding-top: 15px; margin-top: 30px;}
+
+        .article-text { font-size: 1.15rem; line-height: 1.8; margin-bottom: 30px; }
+        .article-text strong { color: var(--accent); background: rgba(0,0,255,0.05); padding: 0 4px; }
+        blockquote { font-family: 'Space Mono', monospace; font-size: 1.15rem; line-height: 1.6; border-left: 4px solid var(--accent); margin: 40px 0; padding-left: 20px; color: #111; background: var(--surface); padding: 20px;}
+        h3 { font-family: 'Archivo', sans-serif; font-size: 1.8rem; text-transform: uppercase; margin: 3rem 0 1.5rem 0; line-height: 1.2; border-bottom: 2px solid var(--border); display: inline-block; padding-bottom: 5px; }
+
+        .reveal-on-scroll { opacity: 0; transform: translateY(40px); transition: all 0.8s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .reveal-on-scroll.is-visible { opacity: 1; transform: translateY(0); }
+
+        /* --- VISUALIZACIÓN PUDDING --- */
+        .pudding-vis { background: #fff; border: 2px solid var(--border); padding: 30px; margin: 60px 0; text-align: center; overflow: hidden;}
+        .pudding-header { font-family: 'Space Mono', monospace; font-size: 0.85rem; font-weight: bold; text-transform: uppercase; margin-bottom: 20px; color: #555; text-align: left;}
+        .dots-container { position: relative; height: 250px; width: 100%; margin: 30px 0; }
+        .dot { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); transition: all 1.5s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .dot.infected { background: var(--accent); z-index: 10;}
+        .btn-vis { appearance: none; background: var(--surface); border: 2px solid var(--border); padding: 10px 20px; cursor: pointer; font-family: 'Space Mono', monospace; font-weight: bold; text-transform: uppercase; font-size: 0.85rem; transition: all 0.2s;}
+        .btn-vis:hover { background: var(--accent); color: #fff; border-color: var(--accent);}
+        .vis-labels { display: flex; justify-content: space-around; font-family: 'Space Mono', monospace; font-size: 0.7rem; color: #888; text-transform: uppercase; opacity: 1; transition: opacity 0.5s;}
+        .vis-labels.hidden { opacity: 0; }
+
+        /* --- GRÁFICOS INSERTADOS --- */
+        .chart-widget { border: 2px solid var(--border); padding: 30px; background: #fff; margin: 40px 0; box-sizing: border-box;}
+        .chart-title { font-family: 'Space Mono', monospace; font-size: 0.85rem; font-weight: bold; text-transform: uppercase; margin-bottom: 20px; color: #555;}
+        .bar-container { margin-bottom: 15px; }
+        .bar-label { font-family: 'Archivo', sans-serif; font-size: 1rem; margin-bottom: 5px; display: flex; justify-content: space-between;}
+        .bar-track { width: 100%; height: 30px; background: var(--surface); border: 1px solid var(--muted); }
+        .bar-fill { height: 100%; background: var(--border); transition: width 1s cubic-bezier(0.25, 0.8, 0.25, 1); width: 0%;}
+        .bar-fill.accent { background: var(--accent); }
+
+        /* --- IMPRESORA DE MATRIZ DE PUNTOS --- */
+        .clock-container { margin: 80px 0 120px 0; max-width: 100%; position: relative;}
+        .matrix-printer {
+            background: #fff; border-top: 2px solid var(--border); border-bottom: 2px solid var(--border);
+            border-left: 30px solid var(--surface-dark); border-right: 30px solid var(--surface-dark);
+            position: relative; padding: 40px 30px;
+        }
+        .matrix-printer::before, .matrix-printer::after {
+            content: ''; position: absolute; top: 0; bottom: 0; width: 30px;
+            background-image: radial-gradient(circle at 15px 15px, var(--bg) 5px, transparent 6px);
+            background-size: 30px 30px; background-repeat: repeat-y;
+        }
+        .matrix-printer::before { left: -30px; }
+        .matrix-printer::after { right: -30px; }
+
+        .clock-label { font-family: 'Space Mono', monospace; font-size: 0.75rem; text-transform: uppercase; color: #888; margin-bottom: 15px;}
+        .lag-text { font-family: 'Space Mono', monospace; font-size: clamp(1.2rem, 3vw, 1.8rem); line-height: 1.4; color: var(--accent); margin: 0; font-weight: bold; text-transform: uppercase; }
+
+        /* --- LA CONSOLA FINAL (LABORATORIO) --- */
+        .call-section { 
+            width: 100vw; margin-left: calc(-50vw + 50%);
+            background: var(--surface); border-top: 2px dashed var(--muted); border-bottom: 2px dashed var(--muted);
+            padding: 80px 20px; margin-top: 80px; margin-bottom: 80px; 
+            display: flex; flex-direction: column; align-items: center; text-align: center; box-sizing: border-box; 
+        }
+        .call-instruction { font-family: 'Archivo', sans-serif; font-size: 1.5rem; text-transform: uppercase; margin-bottom: 30px; line-height: 1.1; color: var(--border);}
+        
+        .btn-open-lab { appearance: none; background: #fff; border: 2px solid var(--accent); padding: 20px 40px; cursor: pointer; position: relative; overflow: hidden; transition: all 0.3s; width: 100%; max-width: 400px; box-shadow: 4px 4px 0 var(--border);}
+        .btn-open-lab .progress { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: var(--accent); z-index: 1; transition: width 0.1s linear;}
+        .btn-open-lab span { position: relative; z-index: 2; font-family: 'Space Mono', monospace; font-weight: bold; color: var(--accent); font-size: 0.85rem;}
+        .btn-open-lab.held span { color: #fff; }
+        .btn-open-lab.answered { background: var(--accent); border-color: var(--accent); pointer-events: none;}
+        .btn-open-lab.answered span { color: #fff; }
+
+        /* --- REVELACIÓN --- */
+        #hidden-content { display: none; opacity: 0; transition: opacity 1.5s ease-in; }
+        #hidden-content.revealed { display: block; opacity: 1; }
+
+        .revelation-box { background: transparent; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 40px 0; margin: 40px 0 60px 0; text-align: center; }
+        .lab-header { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent); text-transform: uppercase; margin-bottom: 20px; letter-spacing: 2px; }
+        .revelation-text { font-family: 'Archivo', sans-serif; font-size: clamp(1.5rem, 6vw, 2.3rem); line-height: 1.1; margin: 0 0 15px 0; text-transform: uppercase; color: var(--text); }
+        .revelation-box .article-text { text-align: left; margin-bottom: 0; font-size: 1.1rem; }
+
+        /* --- FINAL Y AYUDA --- */
+        .final-section { text-align: center; margin: 80px 0 40px 0; padding-top: 60px; border-top: 2px solid var(--border);}
+        .final-title { font-family: 'Archivo', sans-serif; font-size: clamp(2rem, 7vw, 2.5rem); text-transform: uppercase; line-height: 1; margin-bottom: 40px; color: var(--border);}
+        
+        .help-widget { background: #fff; border: 2px dashed var(--border); padding: 30px; margin-top: 40px; display: flex; flex-direction: column; align-items: center; gap: 15px;}
+        .help-title { font-family: 'Space Mono', monospace; font-size: 0.85rem; font-weight: bold; text-transform: uppercase; color: #666; margin: 0;}
+        .btn-action { 
+            background: transparent; color: var(--border); border: 2px solid var(--border); 
+            padding: 15px 20px; font-family: 'Space Mono', monospace; font-weight: bold; 
+            cursor: pointer; text-transform: uppercase; text-decoration: none; 
+            transition: all 0.2s; width: 100%; max-width: 450px;
+            white-space: nowrap; font-size: clamp(0.6rem, 2.5vw, 0.85rem); 
+        }
+        .btn-action:hover { background: var(--border); color: #fff; }
+        .btn-action.primary { background: var(--accent); color: #fff; border-color: var(--accent);}
+        .btn-action.primary:hover { background: transparent; color: var(--accent); }
+
+        .final-lag-text { font-family: 'Space Mono', monospace; font-size: 1.2rem; line-height: 1.4; color: var(--accent); margin: 0 auto; font-weight: bold; text-transform: uppercase; min-height: 1.5em; max-width: 80%;}
+
+        /* AJUSTES MÓVILES (Mantiene el widget visible y adaptado a la izquierda) */
+        @media (max-width: 768px) {
+            .matrix-printer { padding: 30px 15px; border-left-width: 20px; border-right-width: 20px; }
+            .matrix-printer::before, .matrix-printer::after { width: 20px; background-size: 20px 30px; background-position: center;}
+            .matrix-printer::before { left: -20px; }
+            .matrix-printer::after { right: -20px; }
+            
+            .call-widget.floating { width: 210px; top: 80px; left: 10px; padding: 10px;}
+            .call-widget.floating .caller-avatar { width: 30px; height: 30px; font-size: 1rem;}
+            .call-widget.floating .caller-name { font-size: 0.9rem; }
+            .call-widget.floating .caller-status { font-size: 1rem; }
+        }
+
+        @media (max-width: 480px) {
+            .help-widget .btn-action { padding: 12px 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="intro-overlay" id="intro-overlay"></div>
+
+    <div class="call-widget centered" id="call-widget">
+        <div class="caller-info-row">
+            <div class="caller-avatar">☎</div>
+            <div class="caller-details">
+                <h2 class="caller-name" id="caller-name-text">Desconocido</h2>
+                <span class="caller-status blink" id="call-status-text">Llamada entrante...</span>
+            </div>
+        </div>
+
+        <div class="action-buttons" id="action-buttons">
+            <button class="btn-call" onclick="shakeWidget()">IGNORAR</button>
+            <button class="btn-call answer" onclick="startArticle()">ATENDER</button>
+        </div>
+    </div>
+
+
+    <main class="article-container" id="main-article">
+        
+        <header class="article-header">
+            <h1 class="article-title">La llamada que llega tarde</h1>
+            <p class="article-bajada">El diagnóstico tardío de VIH empuja el sistema sanitario a los años 90. Por qué las estadísticas empeoran mientras el financiamiento para prevención desaparece del presupuesto oficial.</p>
+            <span class="article-meta">:: INVESTIGACIÓN | POR ÁNGELA TORRES | 25.03.26</span>
+        </header>
+
+        <p class="article-text reveal-on-scroll">Hacía más de un mes que Jorge estaba internado. La fiebre no bajaba, por eso había ido al hospital, sin saber que nunca más iba a volver a salir.</p>
+        
+        <p class="article-text reveal-on-scroll">A los días de la internación quedó parapléjico. Una semana después tuvo una convulsión de más de diez minutos que le dejó múltiples afecciones cerebrales. Hubo días en que no reconocía a nadie, otros en los que gritaba durante horas por el dolor, incluso con altas dosis de morfina en sangre.</p>
+        
+        <p class="article-text reveal-on-scroll">En 2015, a los 29 años, a Jorge le habían diagnosticado VIH. Casi diez años después, el 24 de agosto de 2025, murió de <strong>SIDA</strong>.</p>
+
+        <blockquote class="reveal-on-scroll">
+            "Para nosotros es como tratar a un paciente de 1990, ya no vemos casos así", dijeron los médicos que lo trataban.
+        </blockquote>
+
+        <p class="article-text reveal-on-scroll">Lo estaban medicando "a ciegas". Probando tratamientos. Por su estado, no podían hacerle la punción cerebral que hubiera permitido un diagnóstico más claro. Sin embargo, aún teniendo esos resultados, las posibilidades de que sobreviviera eran casi nulas.</p>
+
+        <p class="article-text reveal-on-scroll">Pero la historia de Jorge no empieza con su muerte. Empieza mucho antes: con la prevención, el diagnóstico y el acceso al <strong>tratamiento antirretroviral</strong>.</p>
+
+        <div class="pudding-vis reveal-on-scroll">
+            <div class="pudding-header">>>> VISUALIZACIÓN DEMOGRÁFICA DE LA INFECCIÓN</div>
+            
+            <div class="vis-labels" id="vis-labels">
+                <span>Población Clave</span>
+                <span>Población General</span>
+                <span>Jóvenes</span>
+            </div>
+
+            <div class="dots-container" id="dots-container"></div>
+            
+            <button class="btn-vis" id="btn-shuffle" onclick="triggerPuddingEffect()">[ REVELAR TRANSMISIÓN REAL ]</button>
+            <p style="font-family: 'Space Mono'; font-size: 0.7rem; color: #888; margin-top: 15px; margin-bottom:0;">Muestra que el HIV no discrimina por variables demográficas.</p>
+        </div>
+
+        <p class="article-text reveal-on-scroll">Hace décadas que el VIH dejó de ser sinónimo de muerte. Hoy, con tratamiento, una persona puede llevar una vida larga y saludable. En el año 2000, los tratamientos implicaban tomar hasta 18 pastillas por día. Hoy el estándar es la <strong>terapia triple</strong>, simplificada a una o dos pastillas diarias.</p>
+        
+        <p class="article-text reveal-on-scroll">Y sin embargo, al igual que Jorge, en Argentina todavía mueren en promedio 1.400 personas por año a causa del SIDA (la etapa avanzada de la enfermedad). Son muertes en gran medida evitables, propiciadas por la falta de campañas de <strong>educación sexual integral</strong>.</p>
+
+        <h3 class="reveal-on-scroll">El avance de lo tardío</h3>
+        <p class="article-text reveal-on-scroll">El problema de los nuevos diagnósticos tiene dos caras. Preocupa el número, pero si el <strong>sistema de salud</strong> detectara tempranamente, el país tendría un pico de casos un año, los pondría en tratamiento, y al año siguiente vería una baja. Pero eso no está pasando.</p>
+
+        <div class="chart-widget reveal-on-scroll" id="chart-tardio">
+            <div class="chart-title">>>> Diagnósticos en etapa avanzada (Células CD4 < 200)</div>
+            
+            <div class="bar-container">
+                <div class="bar-label"><span>Año 2020</span> <strong>30.2%</strong></div>
+                <div class="bar-track"><div class="bar-fill" data-width="30.2"></div></div>
+            </div>
+            
+            <div class="bar-container">
+                <div class="bar-label"><span style="color:var(--accent);">Año 2024</span> <strong style="color:var(--accent);">48.1%</strong></div>
+                <div class="bar-track"><div class="bar-fill accent" data-width="48.1"></div></div>
+            </div>
+            <p style="font-family:'Space Mono'; font-size:0.75rem; color:#888; margin-top:15px; margin-bottom:0;">Fuente: Boletín Epidemiológico Nacional.</p>
+        </div>
+
+        <p class="article-text reveal-on-scroll">Hoy, casi una de cada dos personas recibe su diagnóstico cuando su sistema inmunológico ya está severamente comprometido. Lo que antes se llamaba "estadío SIDA", hoy se considera simplemente un <strong>diagnóstico tardío</strong>.</p>
+
+        <h3 class="reveal-on-scroll">El retiro del Estado</h3>
+        <p class="article-text reveal-on-scroll">Si la prevención depende en gran medida del acceso a preservativos, la inversión estatal es la primera línea de defensa. Sin embargo, en el último año la <strong>ejecución física</strong> del presupuesto para prevención sufrió recortes asfixiantes. Ningún preservativo se fabrica en Argentina; todos son importados. Y los números del mercado reflejan el abandono del Estado en la compra pública.</p>
+
+        <div class="chart-widget reveal-on-scroll" id="chart-preserv">
+            <div class="chart-title">>>> Importación Nacional de Preservativos (En millones de unidades)</div>
+            
+            <div class="bar-container">
+                <div class="bar-label"><span>Promedio 2013-2022</span> <strong>179M</strong></div>
+                <div class="bar-track"><div class="bar-fill" data-width="100"></div></div>
+            </div>
+            
+            <div class="bar-container">
+                <div class="bar-label"><span>Año 2023</span> <strong>161M</strong></div>
+                <div class="bar-track"><div class="bar-fill" data-width="89.9"></div></div>
+            </div>
+
+            <div class="bar-container">
+                <div class="bar-label"><span style="color:var(--accent);">Año 2024</span> <strong style="color:var(--accent);">122M</strong></div>
+                <div class="bar-track"><div class="bar-fill accent" data-width="68.1"></div></div>
+            </div>
+            <p style="font-family:'Space Mono'; font-size:0.75rem; color:#888; margin-top:15px; margin-bottom:0;">Fuente: Datos KOPELCO.</p>
+        </div>
+
+        <p class="article-text reveal-on-scroll">Menos prevención, menor <strong>presupuesto nacional</strong>, menos preservativos y más diagnósticos tardíos forman parte del mismo ecosistema. La desinformación avanza sobre el terreno que abandona la política pública.</p>
+
+        <div class="clock-container reveal-on-scroll" id="lag-trigger">
+            <div class="matrix-printer">
+                <div class="clock-label">>>> MONITOR DE IMPACTO CLÍNICO</div>
+                <p class="lag-text" id="lag-text-box"></p>
+            </div>
+        </div>
+
+        <div class="call-section reveal-on-scroll" id="call-box">
+            <h3 class="call-instruction">ESTUDIO DE LABORATORIO LISTO</h3>
+            <button id="btn-open-lab" class="btn-open-lab" 
+                onmousedown="startHold()" onmouseup="stopHold()" onmouseleave="stopHold()" 
+                ontouchstart="startHold()" ontouchend="stopHold()">
+                <div id="call-prog" class="progress"></div>
+                <span id="call-txt">[ MANTENER PRESIONADO PARA ABRIR ]</span>
+            </button>
+        </div>
+
+        <div id="hidden-content">
+            <div class="revelation-box" id="revelation-anchor">
+                <div class="lab-header">>>> TRANSCRIPCIÓN_</div>
+                <p class="revelation-text">"Hola, tenemos los resultados de tus análisis. Necesitamos que vengas al consultorio."</p>
+                <p class="article-text">Esa es la frase que parte la biografía en dos. El instante exacto donde la invisibilidad del virus se materializa. Cuando el diagnóstico llega tarde, el impacto no es solo psicológico, es un golpe directo al cuerpo que ya libró una guerra en desventaja durante años.</p>
+            </div>
+
+            <h3 class="reveal-on-scroll">Indetectable = Intransmisible</h3>
+            
+            <p class="article-text reveal-on-scroll">"Las personas con VIH no se negativizan. Lo que tienen es una <strong>carga viral</strong> tan baja que resulta indetectable en los estudios. Si esa carga viral es indetectable durante al menos seis meses, <strong>no transmiten el virus por vía sexual</strong>", detalla Leandro Cahn.</p>
+            
+            <p class="article-text reveal-on-scroll">Siempre es mejor saber que no saber. Si da negativo, es una oportunidad para reforzar prevención. Si da positivo, permite acceder tempranamente al tratamiento, mejorar la calidad de vida y no transmitir la <strong>infección de transmisión sexual (ITS)</strong>.</p>
+
+            <p class="article-text reveal-on-scroll">Jorge no murió en 1990. Murió en 2025. En una habitación de un hospital público. Murió de una enfermedad que hoy tiene tratamiento, que hoy se puede prevenir, y con la que hoy se puede vivir.</p>
+
+            <div class="final-section reveal-on-scroll" id="final-lag-trigger">
+                <h2 class="final-title">La diferencia entre vivir y morir empieza en hacerse el test.</h2>
+                
+                <p class="final-lag-text" id="final-lag-text-box"></p>
+                
+                <div class="help-widget">
+                    <p class="help-title">>>> RED DE ATENCIÓN Y PREVENCIÓN NACIONAL</p>
+                    <a href="https://donde.huesped.org.ar/" target="_blank" class="btn-action primary">
+                        [ MAPA DE TESTEOS (FUNDACIÓN HUÉSPED)&nbsp;]
+                    </a>
+                    <a href="tel:08003333444" class="btn-action">
+                        [ LÍNEA NACIONAL SALUD SEXUAL: 0800-333-3444&nbsp;]
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script>
+        // --- 1. LÓGICA DEL WIDGET FLOTANTE ---
+        let timerInterval;
+        let seconds = 0;
+
+        function updateClock() {
+            seconds++;
+            let m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            let s = (seconds % 60).toString().padStart(2, '0');
+            document.getElementById('call-status-text').innerText = `${m}:${s}`;
+        }
+
+        function shakeWidget() {
+            const widget = document.getElementById('call-widget');
+            widget.style.transform = 'translate(-50%, -50%) rotate(3deg)';
+            setTimeout(() => { widget.style.transform = 'translate(-50%, -50%) rotate(-3deg)';
+                setTimeout(() => { widget.style.transform = 'translate(-50%, -50%) rotate(0deg)'; }, 100);
+            }, 100);
+        }
+
+        function startArticle() {
+            // 1. Quitar overlay
+            const overlay = document.getElementById('intro-overlay');
+            overlay.style.opacity = '0';
+            setTimeout(() => { overlay.style.display = 'none'; }, 500);
+
+            // 2. Mostrar Artículo
+            const main = document.getElementById('main-article');
+            main.style.display = 'block';
+            
+            // 3. Inicializar los puntos del mapa ANTES de la transición
+            initPuddingDots();
+
+            // 4. Transición del Widget (De Centrado a Flotante a la Izquierda)
+            const widget = document.getElementById('call-widget');
+            widget.classList.remove('centered');
+            widget.classList.add('floating');
+
+            // 5. Cambiar el nombre a "Llamada en curso" y el status al contador
+            const nameText = document.getElementById('caller-name-text');
+            nameText.innerText = "Llamada en curso";
+
+            const statusText = document.getElementById('call-status-text');
+            statusText.classList.remove('blink');
+            statusText.innerText = "00:00"; 
+
+            // 6. Hacer visible la nota y arrancar el reloj
+            setTimeout(() => { 
+                main.style.opacity = '1'; 
+            }, 50);
+
+            timerInterval = setInterval(updateClock, 1000);
+        }
+
+
+        // --- 3. EFECTO PUDDING ---
+        const totalDots = 150;
+        let isShuffled = false;
+
+        function initPuddingDots() {
+            const container = document.getElementById('dots-container');
+            const width = container.offsetWidth;
+            const height = container.offsetHeight;
+            
+            // Limpiar por si acaso
+            container.innerHTML = '';
+
+            for(let i=0; i<totalDots; i++) {
+                let dot = document.createElement('div');
+                dot.className = 'dot';
+                dot.id = 'dot-' + i;
+                
+                let x, y;
+                if(i < 30) { 
+                    x = Math.random() * (width * 0.25);
+                    y = Math.random() * height;
+                    dot.classList.add('infected'); 
+                } else if(i < 100) { 
+                    x = (width * 0.35) + Math.random() * (width * 0.3);
+                    y = Math.random() * height;
+                } else { 
+                    x = (width * 0.75) + Math.random() * (width * 0.25);
+                    y = Math.random() * height;
+                }
+
+                dot.style.left = `${x}px`;
+                dot.style.top = `${y}px`;
+                container.appendChild(dot);
+            }
+        }
+
+        function triggerPuddingEffect() {
+            if(isShuffled) return;
+            isShuffled = true;
+            
+            const container = document.getElementById('dots-container');
+            const width = container.offsetWidth;
+            const height = container.offsetHeight;
+            const btn = document.getElementById('btn-shuffle');
+
+            document.getElementById('vis-labels').classList.add('hidden');
+            
+            for(let i=0; i<totalDots; i++) {
+                let dot = document.getElementById('dot-' + i);
+                let newX = Math.random() * (width - 8);
+                let newY = Math.random() * (height - 8);
+                
+                dot.style.left = `${newX}px`;
+                dot.style.top = `${newY}px`;
+
+                if(Math.random() > 0.8) {
+                    dot.classList.add('infected');
+                } else {
+                    dot.classList.remove('infected');
+                }
+            }
+
+            btn.innerText = "[ DEMOGRAFÍA REAL ACTUALIZADA ]";
+            btn.style.background = "var(--surface)";
+            btn.style.color = "var(--border)";
+            btn.style.pointerEvents = "none";
+        }
+
+        // --- 5. ANIMACIÓN DE GRÁFICOS ---
+        function animateCharts(entries, observer) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const bars = entry.target.querySelectorAll('.bar-fill');
+                    bars.forEach(bar => {
+                        const targetWidth = bar.getAttribute('data-width');
+                        bar.style.width = targetWidth + '%';
+                    });
+                    observer.unobserve(entry.target); 
+                }
+            });
+        }
+        const chartObserver = new IntersectionObserver(animateCharts, { threshold: 0.5 });
+        document.querySelectorAll('.chart-widget').forEach(chart => chartObserver.observe(chart));
+
+        // --- 7. LA ESPERA Y APERTURA DE ARCHIVO ---
+        let holdTimer;
+        let holdProgress = 0;
+        let isAnswered = false;
+        const callProg = document.getElementById('call-prog');
+        const callTxt = document.getElementById('call-txt');
+        const btnOpenLab = document.getElementById('btn-open-lab');
+        const callBox = document.getElementById('call-box');
+
+        function startHold() {
+            if(isAnswered) return;
+            btnOpenLab.classList.add('held');
+            callTxt.innerText = "[ DESCARGANDO RESULTADOS... ]";
+            
+            holdTimer = setInterval(() => {
+                holdProgress += 1.2; 
+                callProg.style.width = holdProgress + '%';
+                
+                if(holdProgress >= 100) {
+                    clearInterval(holdTimer);
+                    openLabResult();
+                }
+            }, 30);
+        }
+
+        function stopHold() {
+            if(isAnswered) return;
+            clearInterval(holdTimer);
+            holdProgress = 0;
+            callProg.style.width = '0%';
+            btnOpenLab.classList.remove('held');
+            callTxt.innerText = "[ MANTENER PRESIONADO PARA ABRIR ]";
+        }
+
+        function openLabResult() {
+            isAnswered = true;
+            btnOpenLab.classList.add('answered');
+            callProg.style.width = '100%';
+            callTxt.innerText = ">>> ARCHIVO ABIERTO";
+
+            // Corta la llamada cuando abre el laboratorio
+            clearInterval(timerInterval);
+            const nameText = document.getElementById('caller-name-text');
+            nameText.innerText = "Laboratorio"; // Revela quién llamaba
+            const statusText = document.getElementById('call-status-text');
+            statusText.innerText = "Llamada Finalizada";
+            statusText.style.color = "var(--border)";
+            
+            // Ocultar widget gradualmente
+            setTimeout(() => {
+                document.getElementById('call-widget').style.opacity = '0';
+            }, 3000);
+
+            setTimeout(() => {
+                callBox.style.height = "0";
+                callBox.style.marginTop = "0";
+                callBox.style.marginBottom = "0";
+                callBox.style.padding = "0";
+                callBox.style.border = "none";
+                callBox.style.overflow = "hidden";
+                callBox.style.opacity = "0";
+
+                const hiddenContent = document.getElementById('hidden-content');
+                hiddenContent.classList.add('revealed');
+                
+                setTimeout(() => {
+                    document.getElementById('revelation-anchor').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 500);
+
+            }, 800);
+        }
+
+        // --- 6. EFECTO LAG Y FRASE FINAL ---
+        let lagTriggered = false;
+        let finalLagTriggered = false; 
+        const lagTextContent = "El problema no es el virus. El problema es el tiempo. Cuando el diagnóstico tarda en aparecer, el daño estructural al cuerpo ya está hecho.";
+        const finalLagTextContent = "La próxima llamada no debería llegar tarde.";
+
+        const lagBox = document.getElementById('lag-text-box');
+        const finalLagBox = document.getElementById('final-lag-text-box');
+
+        function typeWriterLag(element, text, i) {
+            if (i < text.length) {
+                if(i === 0 && element.id === 'lag-text-box') {
+                    element.innerHTML = '<span class="blink">>>></span> ';
+                } else if (i === 0) {
+                    element.innerHTML = '';
+                }
+
+                element.innerHTML += text.charAt(i);
+                let delay = Math.random() * 60 + 20; 
+                if(text.charAt(i) === '.') delay += 300; 
+                
+                setTimeout(() => typeWriterLag(element, text, i + 1), delay);
+            } else {
+                element.innerHTML += ' <span class="blink">_</span>';
+            }
+        }
+
+        // --- OBSERVER DE SCROLL GENERAL ---
+        const articleObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    
+                    if(entry.target.id === 'lag-trigger' && !lagTriggered) {
+                        lagTriggered = true;
+                        setTimeout(() => typeWriterLag(lagBox, lagTextContent, 0), 300);
+                    }
+
+                    if(entry.target.id === 'final-lag-trigger' && !finalLagTriggered) {
+                        finalLagTriggered = true;
+                        setTimeout(() => typeWriterLag(finalLagBox, finalLagTextContent, 0), 300);
+                    }
+                }
+            });
+        }, { root: null, rootMargin: '0px', threshold: 0.15 });
+
+        document.querySelectorAll('.reveal-on-scroll, h3, #final-lag-trigger').forEach(el => { articleObserver.observe(el); });
+    </script>
+</body>
+</html>
