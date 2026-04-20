@@ -1,0 +1,22 @@
+name: Despliegue Automático por FTP
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  web-deploy:
+    name: Sincronizar archivos
+    runs-on: ubuntu-latest
+    steps:
+    - name: 🚚 Obtener el código más reciente
+      uses: actions/checkout@v4
+      
+    - name: 🚀 Subir al servidor LatinCloud
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ftp.renderfinal.com.ar
+        username: ${{ secrets.FTP_USER }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        server-dir: /public/
